@@ -46,7 +46,10 @@ func main() {
 	// Parse transcript for tools/agents (optional)
 	toolInfo := internal.ParseTranscript(data.TranscriptPath)
 
-	lines := internal.Render(&data, metrics, git, usage, toolInfo)
+	// Get account info (optional)
+	account := internal.GetAccountInfo()
+
+	lines := internal.Render(&data, metrics, git, usage, toolInfo, account)
 
 	// Output each line individually with:
 	// 1. RESET prefix to clear ANSI state

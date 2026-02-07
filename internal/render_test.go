@@ -334,6 +334,45 @@ func TestFormatCount(t *testing.T) {
 	}
 }
 
+func TestRenderAccount(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		acc         *AccountInfo
+		wantContain string
+	}{
+		{
+			name:        "full email",
+			acc:         &AccountInfo{EmailAddress: "user@example.com"},
+			wantContain: "user@example.com",
+		},
+		{
+			name:        "email with display name",
+			acc:         &AccountInfo{EmailAddress: "test@test.com", DisplayName: "Test User"},
+			wantContain: "test@test.com",
+		},
+		{
+			name:        "empty email",
+			acc:         &AccountInfo{EmailAddress: ""},
+			wantContain: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := renderAccount(tt.acc)
+			if !strings.Contains(got, tt.wantContain) {
+				t.Errorf("renderAccount() = %q, want to contain %q", got, tt.wantContain)
+			}
+			// Verify grey color is used (if email not empty)
+			if tt.wantContain != "" && !strings.Contains(got, grey) {
+				t.Errorf("renderAccount() should use grey color, got %q", got)
+			}
+		})
+	}
+}
+
 func TestRenderVimCompact(t *testing.T) {
 	t.Parallel()
 
@@ -516,32 +555,6 @@ func TestRenderResponseSpeed(t *testing.T) {
 	}
 }
 
-func TestRenderCostVelocity(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name      string
-		perMin    float64
-		wantColor string
-	}{
-		{"high >=0.50 boldRed", 0.50, boldRed},
-		{"medium >=0.10 yellow", 0.10, yellow},
-		{"low <0.10 green", 0.09, green},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := renderCostVelocity(tt.perMin)
-			if !strings.Contains(got, tt.wantColor) {
-				t.Errorf("renderCostVelocity(%f) missing color in %q", tt.perMin, got)
-			}
-			if !strings.Contains(got, "/m") {
-				t.Errorf("renderCostVelocity(%f) missing '/m' in %q", tt.perMin, got)
-			}
-		})
-	}
-}
-
 func TestRenderCostVelocityLabeled(t *testing.T) {
 	t.Parallel()
 
@@ -699,7 +712,7 @@ func TestRender(t *testing.T) {
 			Cost:          Cost{TotalDurationMS: 120000, TotalCostUSD: 1.5},
 		}
 		m := Metrics{ContextPercent: 50}
-		lines := Render(d, m, nil, nil, nil)
+		lines := Render(d, m, nil, nil, nil, nil)
 		if len(lines) < 2 {
 			t.Fatalf("Render() returned %d lines, want >= 2", len(lines))
 		}
@@ -715,7 +728,7 @@ func TestRender(t *testing.T) {
 			Cost:          Cost{TotalDurationMS: 300000, TotalCostUSD: 15.0},
 		}
 		m := Metrics{ContextPercent: 87}
-		lines := Render(d, m, nil, nil, nil)
+		lines := Render(d, m, nil, nil, nil, nil)
 		if len(lines) != 2 {
 			t.Fatalf("danger mode Render() returned %d lines, want 2", len(lines))
 		}
@@ -731,7 +744,7 @@ func TestRender(t *testing.T) {
 			Cost:          Cost{TotalDurationMS: 60000},
 		}
 		m := Metrics{ContextPercent: 90}
-		lines := Render(d, m, nil, nil, nil)
+		lines := Render(d, m, nil, nil, nil, nil)
 		// Context bar in danger mode should contain the red circle emoji
 		found := false
 		for _, line := range lines {
@@ -753,7 +766,7 @@ func TestRender(t *testing.T) {
 		}
 		m := Metrics{ContextPercent: 30}
 		git := &GitInfo{Branch: "main", Dirty: true}
-		lines := Render(d, m, git, nil, nil)
+		lines := Render(d, m, git, nil, nil, nil)
 		found := false
 		for _, line := range lines {
 			if strings.Contains(line, "main*") {

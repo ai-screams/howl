@@ -1,6 +1,11 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"strings"
+	"time"
+)
 
 // ANSI escape codes
 const (
@@ -22,15 +27,14 @@ const (
 
 // render produces lines for the statusline.
 // Normal mode: 2-4 lines (depending on active features). Danger mode (85%+): 2 dense lines.
-func Render(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo) []string {
+func Render(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo) []string {
 	if m.ContextPercent >= DangerThreshold {
 		return renderDangerMode(d, m, git, usage, tools)
 	}
-	return renderNormalMode(d, m, git, usage, tools)
+	return renderNormalMode(d, m, git, usage, tools, account)
 }
 
-func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo) []string {
-	// Line 1: [Model] | Bar% (tokens) | $cost | duration
+func buildLine1(d *StdinData, m Metrics) []string {
 	line1 := make([]string, 0, 5)
 	line1 = append(line1, renderModelBadge(d.Model))
 	line1 = append(line1, renderContextBar(m.ContextPercent, d.ContextWindow))
@@ -38,9 +42,17 @@ func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, t
 		line1 = append(line1, costStr)
 	}
 	line1 = append(line1, renderDuration(d.Cost.TotalDurationMS))
+	return line1
+}
 
-	// Line 2: git | code changes | speed | quota (right side)
-	line2 := make([]string, 0, 6)
+func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo) []string {
+	line1 := buildLine1(d, m)
+
+	// Line 2: account | git | code changes | speed | quota (right side)
+	line2 := make([]string, 0, 7)
+	if account != nil && account.EmailAddress != "" {
+		line2 = append(line2, renderAccount(account))
+	}
 	if git != nil && git.Branch != "" {
 		line2 = append(line2, renderGitCompact(git))
 	}
@@ -92,14 +104,7 @@ func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, t
 }
 
 func renderDangerMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, _ *ToolInfo) []string {
-	// Line 1: 🔴 [Model] Bar% (tokens) | $cost | duration
-	line1 := make([]string, 0, 4)
-	line1 = append(line1, renderModelBadge(d.Model))
-	line1 = append(line1, renderContextBar(m.ContextPercent, d.ContextWindow))
-	if costStr := renderCost(d.Cost.TotalCostUSD); costStr != "" {
-		line1 = append(line1, costStr)
-	}
-	line1 = append(line1, renderDuration(d.Cost.TotalDurationMS))
+	line1 := buildLine1(d, m)
 
 	// Line 2: workspace/git | changes | token breakdown | speed | metrics
 	line2 := make([]string, 0, 10)
@@ -166,9 +171,10 @@ func renderModelBadge(m Model) string {
 
 	// Detect provider
 	suffix := ""
-	if contains(toLower(m.ID), "anthropic.claude-") {
+	lowerID := strings.ToLower(m.ID)
+	if strings.Contains(lowerID, "anthropic.claude-") {
 		suffix = " BR" // Bedrock
-	} else if contains(toLower(m.ID), "publishers/anthropic") {
+	} else if strings.Contains(lowerID, "publishers/anthropic") {
 		suffix = " VX" // Vertex
 	}
 
@@ -195,13 +201,15 @@ func renderContextBar(percent int, cw ContextWindow) string {
 	}
 	empty := width - filled
 
-	bar := ""
+	var b strings.Builder
+	b.Grow(width)
 	for i := 0; i < filled; i++ {
-		bar += "█"
+		b.WriteRune('█')
 	}
 	for i := 0; i < empty; i++ {
-		bar += "░"
+		b.WriteRune('░')
 	}
+	bar := b.String()
 
 	color := contextColor(percent)
 	prefix := ""
@@ -290,6 +298,11 @@ func renderWorkspace(d *StdinData) string {
 	return grey + name + "/" + Reset
 }
 
+func renderAccount(account *AccountInfo) string {
+	// Display full email in grey/dim color
+	return grey + account.EmailAddress + Reset
+}
+
 func renderGitCompact(g *GitInfo) string {
 	if g.Branch == "" {
 		return ""
@@ -310,69 +323,42 @@ func renderLineChanges(c Cost) string {
 	return fmt.Sprintf("%s+%s%s/%s-%s%s", green, add, Reset, red, del, Reset)
 }
 
-func renderCacheEfficiencyCompact(pct int) string {
-	var color string
+func cacheColor(pct int) string {
 	switch {
 	case pct >= CacheExcellent:
-		color = green
+		return green
 	case pct >= CacheGood:
-		color = yellow
+		return yellow
 	default:
-		color = red
+		return red
 	}
-	return fmt.Sprintf("%sC%d%%%s", color, pct, Reset)
+}
+
+func renderCacheEfficiencyCompact(pct int) string {
+	return fmt.Sprintf("%sC%d%%%s", cacheColor(pct), pct, Reset)
 }
 
 func renderCacheEfficiencyLabeled(pct int) string {
-	var color string
+	return fmt.Sprintf("%sCache:%s%d%%%s", grey, cacheColor(pct), pct, Reset)
+}
+
+func apiRatioColor(pct int) string {
 	switch {
-	case pct >= CacheExcellent:
-		color = green
-	case pct >= CacheGood:
-		color = yellow
+	case pct >= WaitHigh:
+		return red
+	case pct >= WaitMedium:
+		return yellow
 	default:
-		color = red
+		return green
 	}
-	return fmt.Sprintf("%sCache:%s%d%%%s", grey, color, pct, Reset)
 }
 
 func renderAPIRatioCompact(pct int) string {
-	var color string
-	switch {
-	case pct >= WaitHigh:
-		color = red
-	case pct >= WaitMedium:
-		color = yellow
-	default:
-		color = green
-	}
-	return fmt.Sprintf("%sA%d%%%s", color, pct, Reset)
+	return fmt.Sprintf("%sA%d%%%s", apiRatioColor(pct), pct, Reset)
 }
 
 func renderAPIRatioLabeled(pct int) string {
-	var color string
-	switch {
-	case pct >= WaitHigh:
-		color = red
-	case pct >= WaitMedium:
-		color = yellow
-	default:
-		color = green
-	}
-	return fmt.Sprintf("%sWait:%s%d%%%s", grey, color, pct, Reset)
-}
-
-func renderCostVelocity(perMin float64) string {
-	var color string
-	switch {
-	case perMin >= CostHigh:
-		color = boldRed
-	case perMin >= CostMedium:
-		color = yellow
-	default:
-		color = green
-	}
-	return fmt.Sprintf("%s$%.2f/m%s", color, perMin, Reset)
+	return fmt.Sprintf("%sWait:%s%d%%%s", grey, apiRatioColor(pct), pct, Reset)
 }
 
 func renderCostVelocityLabeled(perMin float64) string {
@@ -403,7 +389,7 @@ func renderResponseSpeed(tokPerSec int) string {
 
 func renderVimCompact(mode string) string {
 	var color string
-	m := toLower(mode)
+	m := strings.ToLower(mode)
 	switch m {
 	case "normal":
 		color = blue
@@ -420,9 +406,9 @@ func renderVimCompact(mode string) string {
 }
 
 func renderAgentCompact(name string) string {
-	// Take first 8 chars
-	if len(name) > 8 {
-		name = name[:8]
+	runes := []rune(name)
+	if len(runes) > 8 {
+		name = string(runes[:8])
 	}
 	return cyan + "@" + name + Reset
 }
@@ -451,14 +437,9 @@ func renderTools(tools map[string]int) string {
 	for name, count := range tools {
 		entries = append(entries, entry{name, count})
 	}
-	// Simple sort
-	for i := 0; i < len(entries); i++ {
-		for j := i + 1; j < len(entries); j++ {
-			if entries[j].count > entries[i].count {
-				entries[i], entries[j] = entries[j], entries[i]
-			}
-		}
-	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].count > entries[j].count
+	})
 	if len(entries) > 5 {
 		entries = entries[:5]
 	}
@@ -501,6 +482,58 @@ func formatCount(n int) string {
 		return fmt.Sprintf("%.1fK", float64(n)/1000.0)
 	}
 	return fmt.Sprintf("%d", n)
+}
+
+// renderQuota formats 5h/7d remaining percentage for display.
+func renderQuota(u *UsageData) string {
+	color5 := quotaColor(u.RemainingPercent5h)
+	color7 := quotaColor(u.RemainingPercent7d)
+
+	now := time.Now()
+	until5h := formatTimeUntil(now, u.ResetsAt5h)
+	until7d := formatTimeUntil(now, u.ResetsAt7d)
+
+	return fmt.Sprintf("%s(%s)5h:%s %s%.0f%%%s/%s%.0f%%%s %s:7d(%s)%s",
+		dim, until5h, Reset,
+		color5, u.RemainingPercent5h, Reset,
+		color7, u.RemainingPercent7d, Reset,
+		grey, until7d, Reset)
+}
+
+func formatTimeUntil(now, target time.Time) string {
+	if target.IsZero() {
+		return "?"
+	}
+	diff := target.Sub(now)
+	if diff < 0 {
+		return "0"
+	}
+
+	hours := int(diff.Hours())
+	if hours < 24 {
+		return fmt.Sprintf("%dh", hours)
+	}
+	days := hours / 24
+	remainHours := hours % 24
+	if remainHours == 0 {
+		return fmt.Sprintf("%dd", days)
+	}
+	return fmt.Sprintf("%dd%dh", days, remainHours)
+}
+
+func quotaColor(remaining float64) string {
+	switch {
+	case remaining < QuotaCritical:
+		return boldRed
+	case remaining < QuotaLow:
+		return red
+	case remaining < QuotaMedium:
+		return orange
+	case remaining < QuotaHigh:
+		return yellow
+	default:
+		return green
+	}
 }
 
 func joinParts(parts []string) string {

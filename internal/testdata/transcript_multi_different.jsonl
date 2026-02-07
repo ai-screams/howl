@@ -1,0 +1,4 @@
+{"message":{"content":[{"id":"tool_1","name":"Read","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_2","name":"Write","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_3","name":"Edit","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_4","name":"Read","type":"tool_use"}]}}

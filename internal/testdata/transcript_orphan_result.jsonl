@@ -1,0 +1,2 @@
+{"message":{"content":[{"is_error":false,"tool_use_id":"nonexistent_task","type":"tool_result"}]}}
+{"message":{"content":[{"id":"tool_1","name":"Read","type":"tool_use"}]}}

@@ -1,0 +1,14 @@
+{"message":{"content":[{"id":"tool_1","name":"Read","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_2","name":"Read","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_3","name":"Read","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_4","name":"Read","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_5","name":"Read","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_6","name":"Write","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_7","name":"Write","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_8","name":"Write","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_9","name":"Edit","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_10","name":"Edit","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_11","name":"Bash","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_12","name":"Bash","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_13","name":"Grep","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_14","name":"Glob","type":"tool_use"}]}}

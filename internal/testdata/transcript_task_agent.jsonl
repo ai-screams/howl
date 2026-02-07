@@ -1,0 +1,1 @@
+{"message":{"content":[{"id":"task_1","input":{"description":"Write tests","subagent_type":"code-writer"},"name":"Task","type":"tool_use"}]}}

@@ -1,0 +1,1 @@
+{"message":{"content":[{"id":"task_1","input":{"description":"This is a very long description that exceeds thirty characters","subagent_type":"code-writer"},"name":"Task","type":"tool_use"}]}}

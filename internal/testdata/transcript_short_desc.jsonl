@@ -1,0 +1,1 @@
+{"message":{"content":[{"id":"task_1","input":{"description":"Do work","subagent_type":"very-long-agent-name-that-exceeds-8-chars"},"name":"Task","type":"tool_use"}]}}

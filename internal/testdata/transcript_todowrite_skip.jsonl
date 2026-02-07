@@ -1,0 +1,2 @@
+{"message":{"content":[{"id":"tool_1","name":"TodoWrite","type":"tool_use"}]}}
+{"message":{"content":[{"id":"tool_2","name":"Read","type":"tool_use"}]}}

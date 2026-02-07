@@ -375,7 +375,7 @@ MIT License — see LICENSE file for details.
 ## Credits
 
 **Project:** [ai-screams/Howl](https://github.com/ai-screams/Howl)
-**Author:** hanyul
+**Author:** pignuante
 **Inspired by:** [claude-hud](https://github.com/jarrodwatts/claude-hud) by Jarrod Watts
 
 Built with ❤️ and Claude Code.

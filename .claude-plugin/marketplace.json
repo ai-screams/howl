@@ -1,0 +1,17 @@
+{
+  "name": "ai-screams-howl",
+  "owner": {
+    "name": "ai-screams"
+  },
+  "metadata": {
+    "description": "Howl — blazing-fast Go statusline HUD for Claude Code"
+  },
+  "plugins": [
+    {
+      "name": "howl",
+      "source": "./",
+      "description": "Your AI screams — Howl listens. 13 metrics, adaptive layouts, zero dependencies.",
+      "version": "1.0.0"
+    }
+  ]
+}

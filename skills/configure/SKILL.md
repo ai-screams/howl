@@ -18,7 +18,15 @@ Help the user choose a display preset for their Howl statusline HUD.
 
 ## Process
 
-1. **Ask the user which preset they want** (or help them choose by asking about their workflow)
+1. **Use the AskUserQuestion tool to present preset choices as an interactive UI:**
+
+   - Question: "Which Howl statusline preset would you like to use?"
+   - Header: "Display Preset"
+   - Options (4):
+     - Label: "full (default)" | Description: "Complete visibility - All 13 metrics (2-4 lines)"
+     - Label: "minimal" | Description: "Clean workspace - Model + Context + Cost + Duration only (1 line)"
+     - Label: "developer" | Description: "Coding focus - Add Account, Git, Changes, Speed, Cache, Vim (2 lines)"
+     - Label: "cost-focused" | Description: "Budget tracking - Add Quota, API Wait, Cost Velocity (2 lines)"
 
 2. **Show a preview** of their chosen preset:
 

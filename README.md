@@ -7,6 +7,10 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 [![Language](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go)](https://go.dev)
 [![Size](https://img.shields.io/badge/Binary-5.2MB-blue)]()
 [![Speed](https://img.shields.io/badge/Cold%20Start-~10ms-green)]()
+[![Release](https://img.shields.io/github/v/release/ai-screams/Howl)](https://github.com/ai-screams/Howl/releases)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/Howl/release.yaml?label=CI)](https://github.com/ai-screams/Howl/actions)
+[![Coverage](https://img.shields.io/badge/Coverage-76%25-brightgreen)]()
 
 ---
 
@@ -19,6 +23,7 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 - [Performance](#performance)
 - [Development](#development)
 - [Configuration](#configuration)
+- [Uninstallation](#uninstallation)
 - [Troubleshooting](#troubleshooting)
 - [Why Howl?](#why-howl)
 - [Roadmap](#roadmap)
@@ -41,7 +46,7 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 
 - **Model Tier Badge** — Color-coded Opus (gold) / Sonnet (cyan) / Haiku (green)
 - **Context Health Bar** — Visual 20-char bar with 4-tier gradient
-- **Token Absolutes** — See exact usage (210.0K/1000K) not just percentages
+- **Token Absolutes** — See exact usage (210K/1M) with adaptive K/M formatting
 - **Usage Quota** — Live 5h/7d limits with reset countdowns
 
 ### 🔧 **Workflow Awareness**
@@ -62,7 +67,40 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 
 ## Installation
 
-### Download Binary
+Choose your preferred installation method:
+
+### Method 1: Claude Code Plugin (Recommended)
+
+**Current Status:** Available for private repository access only. Will be available on the official Claude Marketplace after public release.
+
+#### Via Self-hosted Marketplace
+
+```bash
+/plugin marketplace add ai-screams/Howl
+/plugin install howl@ai-screams-Howl
+/howl:setup
+```
+
+The `/howl:setup` skill automatically:
+
+- Downloads the correct binary for your OS/architecture
+- Installs to `~/.claude/hud/howl`
+- Configures `~/.claude/settings.json`
+- Backs up existing settings
+
+#### Via Official Marketplace (Coming Soon)
+
+Once Howl is published to the official Claude Plugin Directory:
+
+```bash
+/plugin install howl@claude-plugin-directory
+```
+
+Or search for "howl" in `/plugin > Discover`.
+
+---
+
+### Method 2: Direct Binary Download
 
 Download the latest binary from [GitHub Releases](https://github.com/ai-screams/Howl/releases/latest):
 
@@ -78,25 +116,13 @@ curl -fsSL https://github.com/ai-screams/Howl/releases/latest/download/howl_darw
 # Linux (x86_64)
 curl -fsSL https://github.com/ai-screams/Howl/releases/latest/download/howl_linux_amd64 -o ~/.claude/hud/howl
 
+# Linux (ARM64)
+curl -fsSL https://github.com/ai-screams/Howl/releases/latest/download/howl_linux_arm64 -o ~/.claude/hud/howl
+
 chmod +x ~/.claude/hud/howl
 ```
 
-Verify with: `~/.claude/hud/howl --version`
-
-### Build from Source
-
-Prerequisites: Go 1.23+, Claude Code CLI
-
-```bash
-git clone https://github.com/ai-screams/Howl.git
-cd Howl
-make install
-# Binary installed to ~/.claude/hud/howl
-```
-
-### Configure Claude Code
-
-Add to your `~/.claude/settings.json`:
+Then add to `~/.claude/settings.json`:
 
 ```json
 {
@@ -107,7 +133,28 @@ Add to your `~/.claude/settings.json`:
 }
 ```
 
-Restart Claude Code to see Howl in action.
+Verify: `~/.claude/hud/howl --version`
+
+---
+
+### Method 3: Build from Source
+
+Prerequisites: Go 1.23+, Claude Code CLI
+
+```bash
+git clone https://github.com/ai-screams/Howl.git
+cd Howl
+make install
+# Binary installed to ~/.claude/hud/howl
+```
+
+The Makefile automatically configures your settings.json.
+
+---
+
+### Post-Installation
+
+Restart Claude Code to activate the statusline. The HUD will appear at the bottom of your terminal.
 
 ---
 
@@ -117,20 +164,29 @@ Howl runs automatically as a subprocess every ~300ms. No manual interaction need
 
 ### Example Output
 
-**Normal Session (21% context) — 4 lines:**
+**1M Context Session (17%) — 4 lines:**
 
 ```
-[Sonnet 4.5] | ████░░░░░░░░░░░░░░░░ 21% (210.0K/1000K) | $32.7 | 2h46m
+[Sonnet 4.5 (1M context)] | ███░░░░░░░░░░░░░░░░░ 17% (170K/1M) | $16.1 | 28h0m
+hanyul.ryu@gmail.com | main | +89/-23 | 11tok/s | (3h)5h: 80%/2% :7d(18h)
+Edit(3) Bash(3)
+Cache:99% | Wait:5% | Cost:$0.01/m | I
+```
+
+**Normal Session (21% context, 1M) — 4 lines:**
+
+```
+[Sonnet 4.5] | ████░░░░░░░░░░░░░░░░ 21% (210K/1000K) | $32.7 | 2h46m
 main* | +2.7K/-120 | 50tok/s | (2h)5h: 55%/42% :7d(3d6h)
 Read(9) Bash(8) TaskCreate(4) mcp__context7(3)
 Cache:96% | Wait:41% | Cost:$0.19/m | I
 ```
 
-**Danger Mode (87% context) — 2 lines (dense):**
+**Danger Mode (87% context, 200K) — 2 lines:**
 
 ```
-🔴 [Opus 4.6] | ████████████████░░ 87% (174.0K/200K) | $15.7 | 1h23m
-hud/main* | +850/-45 | In:30.0K Out:3.0K Cache:135.0K | 11tok/s | C79% | A24% | $11.3/h | I | @code-wri | (1h)5h: 25%/18% :7d(2d)
+🔴 [Opus 4.6] | ████████████████░░ 87% (174K/200K) | $15.7 | 1h23m
+hud/main* | +850/-45 | In:30K Out:3K Cache:135K | 11tok/s | C79% | A24% | $11.3/h | I | @code-wri | (1h)5h: 25%/18% :7d(2d)
 ```
 
 ### Metrics Explained
@@ -303,6 +359,31 @@ No manual configuration needed if Claude Code is authenticated.
 
 ---
 
+## Uninstallation
+
+### If installed via Plugin
+
+```bash
+/plugin uninstall howl@ai-screams-Howl
+```
+
+This removes the plugin but keeps the binary. To remove everything:
+
+```bash
+/plugin uninstall howl@ai-screams-Howl
+rm ~/.claude/hud/howl
+```
+
+Then remove the `statusLine` field from `~/.claude/settings.json`.
+
+### If installed manually
+
+1. Remove binary: `rm ~/.claude/hud/howl`
+2. Remove `statusLine` field from `~/.claude/settings.json`
+3. Restart Claude Code
+
+---
+
 ## Troubleshooting
 
 ### Quota shows `?`
@@ -333,21 +414,27 @@ No manual configuration needed if Claude Code is authenticated.
 
 ## Why Howl?
 
-Howl was created to solve specific pain points with existing Claude Code statusline tools:
+Howl was created to solve specific pain points with existing Claude Code statusline tools.
 
-### Problems with claude-hud
+### Comparison
 
-- ❌ **Cross-session bugs** — Global cache shared between sessions
-- ❌ **OAuth API blocked** — Missing `anthropic-beta` header
-- ❌ **Limited metrics** — No cache efficiency or wait ratio
-- ❌ **Node.js dependency** — 70ms cold start overhead
+| Feature            | claude-hud        | Howl               |
+| ------------------ | ----------------- | ------------------ |
+| Cold start         | ~70ms (Node.js)   | ~10ms (Go)         |
+| Dependencies       | npm ecosystem     | Zero (stdlib only) |
+| Context display    | % only            | Absolute (500K/1M) |
+| Metrics count      | 3-5               | 13                 |
+| 1M context support | ❌                | ✅                 |
+| Session isolation  | ❌ Global cache   | ✅ Per session_id  |
+| OAuth quota        | ❌ Missing header | ✅ Correct API     |
 
-### Howl Solutions
+### What Makes Howl Different
 
-- ✅ **Session isolation** — Cache per `session_id`
-- ✅ **OAuth headers** — Correct `anthropic-beta` header included
-- ✅ **Rich metrics** — 13 distinct indicators across 2-4 display lines
-- ✅ **Go performance** — ~10ms cold start, 5.2MB binary, zero dependencies
+- **Session isolation** — Cache per `session_id`, preventing cross-session bugs
+- **OAuth headers** — Correct `anthropic-beta` header included for API access
+- **Rich metrics** — 13 distinct indicators across 2-4 display lines
+- **Go performance** — ~10ms cold start, 5.2MB binary, zero dependencies
+- **1M context ready** — Adaptive K/M formatting for large windows
 
 ---
 

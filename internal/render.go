@@ -27,11 +27,11 @@ const (
 
 // render produces lines for the statusline.
 // Normal mode: 2-4 lines (depending on active features). Danger mode (85%+): 2 dense lines.
-func Render(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo) []string {
+func Render(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo, cfg Config) []string {
 	if m.ContextPercent >= DangerThreshold {
 		return renderDangerMode(d, m, git, usage, tools)
 	}
-	return renderNormalMode(d, m, git, usage, tools, account)
+	return renderNormalMode(d, m, git, usage, tools, account, cfg)
 }
 
 func buildLine1(d *StdinData, m Metrics) []string {
@@ -45,55 +45,60 @@ func buildLine1(d *StdinData, m Metrics) []string {
 	return line1
 }
 
-func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo) []string {
+func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo, cfg Config) []string {
 	line1 := buildLine1(d, m)
 
-	// Line 2: account | git | code changes | speed | quota (right side)
+	// Line 2: account | git | code changes | speed | quota (conditional based on config)
 	line2 := make([]string, 0, 7)
-	if account != nil && account.EmailAddress != "" {
+	if cfg.Features.Account && account != nil && account.EmailAddress != "" {
 		line2 = append(line2, renderAccount(account))
 	}
-	if git != nil && git.Branch != "" {
+	if cfg.Features.Git && git != nil && git.Branch != "" {
 		line2 = append(line2, renderGitCompact(git))
 	}
-	if lines := renderLineChanges(d.Cost); lines != "" {
-		line2 = append(line2, lines)
+	if cfg.Features.LineChanges {
+		if lines := renderLineChanges(d.Cost); lines != "" {
+			line2 = append(line2, lines)
+		}
 	}
-	if m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
+	if cfg.Features.ResponseSpeed && m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
 		line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed))
 	}
-	if usage != nil {
+	if cfg.Features.Quota && usage != nil {
 		line2 = append(line2, renderQuota(usage))
 	}
 
-	// Line 3: tools and agents
+	// Line 3: tools and agents (conditional)
 	line3 := make([]string, 0, 3)
-	if tools != nil && len(tools.Tools) > 0 {
+	if cfg.Features.Tools && tools != nil && len(tools.Tools) > 0 {
 		line3 = append(line3, renderTools(tools.Tools))
 	}
-	if tools != nil && len(tools.Agents) > 0 {
+	if cfg.Features.Agents && tools != nil && len(tools.Agents) > 0 {
 		line3 = append(line3, renderAgents(tools.Agents))
 	}
 
-	// Line 4: metrics + vim/agent
+	// Line 4: metrics + vim/agent (conditional)
 	line4 := make([]string, 0, 6)
-	if m.CacheEfficiency != nil && *m.CacheEfficiency > 0 {
+	if cfg.Features.CacheEfficiency && m.CacheEfficiency != nil && *m.CacheEfficiency > 0 {
 		line4 = append(line4, renderCacheEfficiencyLabeled(*m.CacheEfficiency))
 	}
-	if m.APIWaitRatio != nil && *m.APIWaitRatio > 0 {
+	if cfg.Features.APIWaitRatio && m.APIWaitRatio != nil && *m.APIWaitRatio > 0 {
 		line4 = append(line4, renderAPIRatioLabeled(*m.APIWaitRatio))
 	}
-	if m.CostPerMinute != nil {
+	if cfg.Features.CostVelocity && m.CostPerMinute != nil {
 		line4 = append(line4, renderCostVelocityLabeled(*m.CostPerMinute))
 	}
-	if d.Vim != nil && d.Vim.Mode != "" {
+	if cfg.Features.VimMode && d.Vim != nil && d.Vim.Mode != "" {
 		line4 = append(line4, renderVimCompact(d.Vim.Mode))
 	}
-	if d.Agent != nil && d.Agent.Name != "" {
+	if cfg.Features.AgentName && d.Agent != nil && d.Agent.Name != "" {
 		line4 = append(line4, renderAgentCompact(d.Agent.Name))
 	}
 
-	lines := []string{joinParts(line1), joinParts(line2)}
+	lines := []string{joinParts(line1)}
+	if len(line2) > 0 {
+		lines = append(lines, joinParts(line2))
+	}
 	if len(line3) > 0 {
 		lines = append(lines, joinParts(line3))
 	}

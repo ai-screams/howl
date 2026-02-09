@@ -739,10 +739,13 @@ func TestRender(t *testing.T) {
 		d := &StdinData{
 			Model:         Model{DisplayName: "Claude Sonnet 4.5"},
 			ContextWindow: ContextWindow{ContextWindowSize: 200000},
-			Cost:          Cost{TotalDurationMS: 120000, TotalCostUSD: 1.5},
+			Cost:          Cost{TotalDurationMS: 120000, TotalCostUSD: 1.5, TotalLinesAdded: 100},
+			Workspace:     Workspace{CurrentDir: "/test"},
 		}
 		m := Metrics{ContextPercent: 50}
-		lines := Render(d, m, nil, nil, nil, nil)
+		// Provide data so full preset shows multiple lines
+		git := &GitInfo{Branch: "main"}
+		lines := Render(d, m, git, nil, nil, nil, DefaultConfig())
 		if len(lines) < 2 {
 			t.Fatalf("Render() returned %d lines, want >= 2", len(lines))
 		}
@@ -758,7 +761,7 @@ func TestRender(t *testing.T) {
 			Cost:          Cost{TotalDurationMS: 300000, TotalCostUSD: 15.0},
 		}
 		m := Metrics{ContextPercent: 87}
-		lines := Render(d, m, nil, nil, nil, nil)
+		lines := Render(d, m, nil, nil, nil, nil, DefaultConfig())
 		if len(lines) != 2 {
 			t.Fatalf("danger mode Render() returned %d lines, want 2", len(lines))
 		}
@@ -774,7 +777,7 @@ func TestRender(t *testing.T) {
 			Cost:          Cost{TotalDurationMS: 60000},
 		}
 		m := Metrics{ContextPercent: 90}
-		lines := Render(d, m, nil, nil, nil, nil)
+		lines := Render(d, m, nil, nil, nil, nil, DefaultConfig())
 		// Context bar in danger mode should contain the red circle emoji
 		found := false
 		for _, line := range lines {
@@ -796,7 +799,7 @@ func TestRender(t *testing.T) {
 		}
 		m := Metrics{ContextPercent: 30}
 		git := &GitInfo{Branch: "main", Dirty: true}
-		lines := Render(d, m, git, nil, nil, nil)
+		lines := Render(d, m, git, nil, nil, nil, DefaultConfig())
 		found := false
 		for _, line := range lines {
 			if strings.Contains(line, "main*") {
@@ -806,6 +809,111 @@ func TestRender(t *testing.T) {
 		}
 		if !found {
 			t.Error("normal mode should show git branch in output")
+		}
+	})
+}
+
+func TestRenderWithConfig(t *testing.T) {
+	t.Parallel()
+
+	d := &StdinData{
+		Model:         Model{DisplayName: "Claude Sonnet 4.5"},
+		ContextWindow: ContextWindow{ContextWindowSize: 200000},
+		Cost:          Cost{TotalDurationMS: 120000, TotalCostUSD: 1.5},
+	}
+	m := Metrics{ContextPercent: 30}
+	git := &GitInfo{Branch: "main", Dirty: true}
+	account := &AccountInfo{EmailAddress: "user@example.com"}
+
+	t.Run("full preset shows all features", func(t *testing.T) {
+		cfg := PresetConfig("full")
+		lines := Render(d, m, git, nil, nil, account, cfg)
+		// full preset with git + account should show at least 2 lines
+		if len(lines) < 2 {
+			t.Errorf("full preset should show 2+ lines, got %d", len(lines))
+		}
+		// Should contain account email
+		output := strings.Join(lines, " ")
+		if !strings.Contains(output, "user@example.com") {
+			t.Error("full preset should show account email")
+		}
+		if !strings.Contains(output, "main*") {
+			t.Error("full preset should show git branch")
+		}
+	})
+
+	t.Run("minimal preset shows only line 1", func(t *testing.T) {
+		cfg := PresetConfig("minimal")
+		lines := Render(d, m, git, nil, nil, account, cfg)
+		// minimal preset should show only 1 line (no line2/3/4)
+		if len(lines) != 1 {
+			t.Errorf("minimal preset should show 1 line, got %d", len(lines))
+		}
+		// Should NOT contain account or git
+		output := strings.Join(lines, " ")
+		if strings.Contains(output, "user@example.com") {
+			t.Error("minimal preset should not show account")
+		}
+		if strings.Contains(output, "main") {
+			t.Error("minimal preset should not show git branch")
+		}
+	})
+
+	t.Run("developer preset shows account and git", func(t *testing.T) {
+		cfg := PresetConfig("developer")
+		lines := Render(d, m, git, nil, nil, account, cfg)
+		// developer preset should show 2 lines (line1 + line2)
+		if len(lines) < 2 {
+			t.Errorf("developer preset should show 2+ lines, got %d", len(lines))
+		}
+		output := strings.Join(lines, " ")
+		if !strings.Contains(output, "user@example.com") {
+			t.Error("developer preset should show account")
+		}
+		if !strings.Contains(output, "main*") {
+			t.Error("developer preset should show git branch")
+		}
+	})
+
+	t.Run("cost-focused preset shows quota metrics", func(t *testing.T) {
+		cfg := PresetConfig("cost-focused")
+		usage := &UsageData{RemainingPercent5h: 80.0, RemainingPercent7d: 90.0}
+		lines := Render(d, m, nil, usage, nil, account, cfg)
+		// cost-focused should show quota on line2
+		if len(lines) < 2 {
+			t.Errorf("cost-focused preset should show 2+ lines, got %d", len(lines))
+		}
+		// Should NOT contain account or git
+		output := strings.Join(lines, " ")
+		if strings.Contains(output, "user@example.com") {
+			t.Error("cost-focused preset should not show account")
+		}
+	})
+}
+
+func TestRenderDangerModeIgnoresConfig(t *testing.T) {
+	t.Parallel()
+
+	d := &StdinData{
+		Model:         Model{DisplayName: "Claude Sonnet 4.5"},
+		ContextWindow: ContextWindow{ContextWindowSize: 200000},
+		Cost:          Cost{TotalDurationMS: 120000, TotalCostUSD: 1.5},
+	}
+	m := Metrics{ContextPercent: 87} // Danger mode
+	git := &GitInfo{Branch: "main", Dirty: true}
+	account := &AccountInfo{EmailAddress: "user@example.com"}
+
+	t.Run("minimal preset ignored in danger mode", func(t *testing.T) {
+		cfg := PresetConfig("minimal")
+		lines := Render(d, m, git, nil, nil, account, cfg)
+		// Danger mode always shows 2 lines, ignoring preset
+		if len(lines) != 2 {
+			t.Errorf("danger mode should show 2 lines regardless of preset, got %d", len(lines))
+		}
+		// Danger mode should contain danger indicator
+		output := strings.Join(lines, " ")
+		if !strings.Contains(output, "🔴") {
+			t.Error("danger mode should show danger indicator")
 		}
 	})
 }

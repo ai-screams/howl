@@ -32,6 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	cfg := internal.LoadConfig()
 	metrics := internal.ComputeMetrics(&data)
 
 	dir := data.Workspace.ProjectDir
@@ -49,7 +50,7 @@ func main() {
 	// Get account info (optional)
 	account := internal.GetAccountInfo()
 
-	lines := internal.Render(&data, metrics, git, usage, toolInfo, account)
+	lines := internal.Render(&data, metrics, git, usage, toolInfo, account, cfg)
 
 	// Output each line individually with:
 	// 1. RESET prefix to clear ANSI state

@@ -1,16 +1,32 @@
 {
-  "name": "ai-screams-Howl",
+  "name": "ai-screams-howl",
   "owner": {
-    "name": "AiScream"
+    "name": "AiScream",
+    "email": "hanyul.ryu@hanyul.xyz"
   },
   "metadata": {
-    "description": "Howl — blazing-fast Go statusline HUD for Claude Code"
+    "description": "Howl — blazing-fast Go statusline HUD for Claude Code",
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "howl",
       "source": "./",
-      "description": "Your AI screams — Howl listens. 13 metrics, adaptive layouts, zero dependencies."
+      "description": "Your AI screams — Howl listens. 13 metrics, adaptive layouts, zero dependencies.",
+      "author": {
+        "name": "AiScream"
+      },
+      "homepage": "https://github.com/ai-screams/Howl",
+      "repository": "https://github.com/ai-screams/Howl",
+      "license": "MIT",
+      "keywords": [
+        "statusline",
+        "hud",
+        "metrics",
+        "performance",
+        "go"
+      ],
+      "category": "developer-tools"
     }
   ]
 }

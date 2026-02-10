@@ -81,4 +81,5 @@ jobs:
         if: steps.check.outputs.needs_release == 'true'
         run: |
           git tag ${{ steps.version.outputs.next }}
-          git push --atomic origin main ${{ steps.version.outputs.next }}
+          git push origin main
+          git push origin ${{ steps.version.outputs.next }}

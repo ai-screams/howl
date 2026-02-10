@@ -21,7 +21,7 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 [![Dependencies](https://img.shields.io/badge/Dependencies-0-brightgreen?logo=go&logoColor=white)]()
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 
-[![Binary Size](https://img.shields.io/badge/Binary-5.2MB-blue?logo=go&logoColor=white)]()
+[![Binary Size](https://img.shields.io/badge/Binary-5.6MB-blue?logo=go&logoColor=white)]()
 [![Cold Start](https://img.shields.io/badge/Cold%20Start-~10ms-green?logo=go&logoColor=white)]()
 [![CGO](https://img.shields.io/badge/CGO-disabled-blue?logo=go&logoColor=white)]()
 [![macOS](https://img.shields.io/badge/macOS-amd64%20%7C%20arm64-000000?logo=apple&logoColor=white)](https://github.com/ai-screams/Howl/releases)
@@ -112,7 +112,7 @@ The `/howl:setup` skill automatically:
 - Configures `~/.claude/settings.json`
 - Backs up existing settings
 
-After installation, use `/howl:configure` to customize your statusline display with preset configurations.
+After installation, use `/howl:configure` to choose a preset, or `/howl:customize` for fine-grained metric toggles and priority ordering.
 
 #### Via Official Marketplace (Coming Soon)
 
@@ -288,6 +288,11 @@ howl/
 │   ├── integration_test.go  # Integration tests
 │   └── testdata/            # JSONL test fixtures
 ├── docs/                    # Design & research documents
+├── skills/
+│   ├── setup/SKILL.md       # /howl:setup (installation)
+│   ├── configure/SKILL.md   # /howl:configure (preset selection)
+│   └── customize/SKILL.md   # /howl:customize (metric toggles)
+├── .claude-plugin/          # Claude Code plugin metadata
 ├── Makefile                 # Build automation
 └── go.mod                   # Go module definition
 ```
@@ -475,7 +480,7 @@ Howl was created to solve specific pain points with existing Claude Code statusl
 - **Session isolation** — Cache per `session_id`, preventing cross-session bugs
 - **OAuth headers** — Correct `anthropic-beta` header included for API access
 - **Rich metrics** — 13 distinct indicators across 2-4 display lines
-- **Go performance** — ~10ms cold start, 5.2MB binary, zero dependencies
+- **Go performance** — ~10ms cold start, 5.6MB binary, zero dependencies
 - **1M context ready** — Adaptive K/M formatting for large windows
 
 ---
@@ -505,8 +510,8 @@ For release history and detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## 💝 Credits
 
-**Project:** [ai-screams/Howl](https://github.com/ai-screams/Howl)
-**Author:** pignuante
+**Project:** [ai-screams/Howl](https://github.com/ai-screams/Howl)<br>
+**Author:** pignuante<br>
 **Inspired by:** [claude-hud](https://github.com/jarrodwatts/claude-hud) by Jarrod Watts
 
 Built with ❤️ and Claude Code.

@@ -2,75 +2,125 @@
 
 ## Overview
 
-Howl uses automated releases via GitHub Actions. The auto-release workflow requires a Personal Access Token (PAT) to trigger the release pipeline.
+Howl uses automated releases via GitHub Actions. The auto-release workflow uses a GitHub App to trigger the release pipeline.
 
-## Why PAT is Required
+## Why GitHub App is Used
 
 GitHub's GITHUB_TOKEN cannot trigger other workflows to prevent infinite loops. Our release flow needs:
 
 1. auto-release creates tag → 2. tag push triggers release workflow
 
+GitHub Apps provide more secure token generation (1-hour expiry) vs Personal Access Tokens (90-day expiry).
+
 Reference: [GitHub Docs](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow)
 
-## PAT Setup (One-time)
+## GitHub App Setup (One-time)
 
-### 1. Create Fine-grained PAT
+### 1. Create GitHub App (Organization Admin)
 
-- Go to: https://github.com/settings/tokens?type=beta
-- Click "Generate new token" → "Fine-grained token"
-- **Token name:** `howl-auto-release`
-- **Expiration:** 90 days
-- **Repository access:** Only select repositories → `ai-screams/Howl`
-- **Permissions:**
-  - Repository permissions → Contents: **Read and write**
-  - (All others: No access)
-- Click "Generate token"
-- **Copy the token** (shown only once)
+- Go to: https://github.com/organizations/ai-screams/settings/apps/new
+- **GitHub App name:** `howl-release-automation`
+- **Homepage URL:** `https://github.com/ai-screams/Howl`
+- **Webhook:** Uncheck "Active" (not needed)
+- **Repository permissions:**
+  - Contents: **Read and write**
+  - Metadata: Read only (automatic)
+- **Where can this GitHub App be installed?** Only on this account
+- Click "Create GitHub App"
 
-### 2. Add Secret to Repository
+### 2. Generate Private Key
 
-- Go to: https://github.com/ai-screams/Howl/settings/secrets/actions
+After app creation:
+- Scroll down to **Private keys** section
+- Click "Generate a private key"
+- Download `.pem` file (save securely!)
+- Copy **App ID** from page top (e.g., `2833108`)
+
+### 3. Install App to Repository
+
+- Left menu → "Install App"
+- Click "Install" next to ai-screams
+- **Only select repositories** → Check `Howl`
+- Click "Install"
+
+### 4. Add Repository Secrets
+
+Go to: https://github.com/ai-screams/Howl/settings/secrets/actions
+
+**Secret 1: APP_ID**
 - Click "New repository secret"
-- **Name:** `AUTO_RELEASE_PAT`
-- **Value:** [paste token from step 1]
+- Name: `APP_ID`
+- Value: `2833108` (your App ID number)
 - Click "Add secret"
 
-### 3. Verify Setup
+**Secret 2: APP_PRIVATE_KEY**
+- Click "New repository secret" again
+- Name: `APP_PRIVATE_KEY`
+- Value: (entire .pem file contents)
+  ```
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEpAIBAAKCAQEA...
+  ...
+  -----END RSA PRIVATE KEY-----
+  ```
+- Click "Add secret"
 
-After next merge to main:
+### 5. Verify Setup
 
-- Check: https://github.com/ai-screams/Howl/actions/workflows/auto-release.yaml
-- Auto-release should succeed AND trigger release workflow
-- Verify tag push triggers release.yaml
+Test token generation:
+```bash
+gh workflow run test-github-app.yaml
+gh run list --workflow=test-github-app.yaml
+```
+
+After next merge to main, verify auto-release triggers release workflow
 
 ## Maintenance
 
-### Token Expiration (Every 90 days)
+### Private Key Rotation (If Compromised)
 
-1. GitHub will email 7 days before expiration
-2. Create new PAT (same steps as above)
-3. Update `AUTO_RELEASE_PAT` secret with new token
-4. Old token auto-expires
+GitHub App tokens auto-expire after 1 hour, but private key is persistent.
 
-### If Token Expires
+**If private key is compromised:**
+
+1. Go to: https://github.com/organizations/ai-screams/settings/apps/howl-release-automation
+2. Scroll to **Private keys** section
+3. Click "Revoke" on old key
+4. Click "Generate a private key" for new key
+5. Download new `.pem` file
+6. Update `APP_PRIVATE_KEY` secret with new key contents
+7. Test with: `gh workflow run test-github-app.yaml`
+
+### If Authentication Fails
 
 **Symptoms:**
 
-- auto-release fails with "Authentication failed"
+- auto-release fails with "Bad credentials" or "Authentication failed"
 - Release workflow not triggered after tag push
+
+**Check:**
+
+1. Verify `APP_ID` secret exists and matches GitHub App ID
+2. Verify `APP_PRIVATE_KEY` secret contains full .pem file
+3. Verify GitHub App is installed on Howl repository
+4. Check App permissions: Contents = Read and write
 
 **Quick fix:**
 
-1. Create new PAT (steps above)
-2. Update secret
+1. Regenerate private key (steps above)
+2. Update `APP_PRIVATE_KEY` secret
 3. Re-run failed auto-release workflow
 
 ## Testing
 
-Test PAT without releasing:
+Test GitHub App authentication:
 
 ```bash
-# Create test tag locally
+# Test token generation (no release)
+gh workflow run test-github-app.yaml
+gh run list --workflow=test-github-app.yaml
+
+# Test full flow with test tag
 git tag v1.2.1-test
 git push origin v1.2.1-test
 
@@ -84,7 +134,8 @@ git push origin :refs/tags/v1.2.1-test
 
 ## Security Notes
 
-- PAT has write access to repository
-- Store securely, never commit to code
-- Rotate every 90 days
-- Use fine-grained token (not classic) for minimal permissions
+- GitHub App has write access to repository Contents
+- Private key stored in GitHub Secrets (encrypted at rest)
+- Tokens auto-expire after 1 hour (vs 90 days for PAT)
+- App scoped to single repository only
+- Never commit `.pem` file or expose `APP_PRIVATE_KEY` secret

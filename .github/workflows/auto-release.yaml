@@ -4,9 +4,10 @@ on:
   push:
     branches: [main]
 
-# This workflow uses a Personal Access Token (AUTO_RELEASE_PAT) instead of GITHUB_TOKEN
+# This workflow uses a GitHub App token instead of GITHUB_TOKEN
 # because GitHub Actions prevents GITHUB_TOKEN from triggering other workflows.
-# See: https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow
+# GitHub App tokens auto-expire (1h) and provide better security than PAT.
+# See: https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow
 
 concurrency:
   group: release
@@ -20,11 +21,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Generate GitHub App token
+        uses: actions/create-github-app-token@29824e69f54612133e76f7eaac726eef6c875baf # v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
           filter: blob:none
-          token: ${{ secrets.AUTO_RELEASE_PAT }} # PAT required to trigger release workflow
+          token: ${{ steps.app-token.outputs.token }} # GitHub App token to trigger release workflow
 
       - name: Install svu
         run: |

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-02-10
+
+### Added
+
+- Dependabot for GitHub Actions (weekly grouped updates, `chore(deps)` prefix)
+- Security Architecture section in SECURITY.md (trust model, subprocess inventory, credential handling, network egress, file system access)
+
+### Fixed
+
+- SHA-pin `upload-artifact@v4` → `v4.6.2` (last unpinned action across 9 workflows)
+- Pin `govulncheck@latest` → `v1.1.4` for reproducible security scanning
+- Add SHA256 checksum verification for Gitleaks binary download
+- Separate concurrency groups: `auto-release` vs `release` (tag-triggered Release was skipped when sharing group)
+
+### Changed
+
+- SECURITY.md overhauled: realistic SLA for single-maintainer, expanded scope (10 items), 90-day embargo policy
+- marketplace.json standardized for Anthropic Marketplace submission (kebab-case name, schema compliance)
+
 ## [1.4.0] - 2026-02-10
 
 ### Added
@@ -94,7 +113,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extract magic numbers to constants
 - Remove deprecated and unused render functions
 
-[Unreleased]: https://github.com/ai-screams/Howl/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/ai-screams/Howl/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/ai-screams/Howl/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/ai-screams/Howl/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/ai-screams/Howl/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ai-screams/Howl/compare/v1.1.0...v1.2.0

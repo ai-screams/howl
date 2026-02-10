@@ -5,18 +5,18 @@ disable-model-invocation: false
 
 # Howl Threshold
 
-Customize when Howl changes colors and switches modes. All 16 threshold values are configurable — they control when metrics turn green/yellow/orange/red and when danger mode activates.
+Customize when Howl changes colors and switches modes. All 17 threshold values are configurable — they control when metrics turn green/yellow/orange/red and when danger mode activates.
 
 ## Threshold Groups
 
 | Group             | Thresholds                                                  | Defaults                     | Effect                                      |
 | ----------------- | ----------------------------------------------------------- | ---------------------------- | ------------------------------------------- |
 | **Context**       | `context_danger`, `context_warning`, `context_moderate`     | 85%, 70%, 50%                | Danger mode trigger, warning/moderate color |
-| **Session Cost**  | `session_cost_high`, `session_cost_med`                     | $5.00, $1.00                 | Cost display color                          |
+| **Session Cost**  | `session_cost_high`, `session_cost_medium`                  | $5.00, $1.00                 | Cost display color                          |
 | **Cache**         | `cache_excellent`, `cache_good`                             | 80%, 50%                     | Cache efficiency color                      |
 | **API Wait**      | `wait_high`, `wait_medium`                                  | 60%, 35%                     | API wait ratio color                        |
 | **Speed**         | `speed_fast`, `speed_moderate`                              | 60, 30 tok/s                 | Response speed color                        |
-| **Cost Velocity** | `cost_velocity_high`, `cost_velocity_med`                   | $0.50, $0.10/min             | Cost velocity color                         |
+| **Cost Velocity** | `cost_velocity_high`, `cost_velocity_medium`                | $0.50, $0.10/min             | Cost velocity color                         |
 | **Quota**         | `quota_critical`, `quota_low`, `quota_medium`, `quota_high` | 10%, 25%, 50%, 75% remaining | Quota color bands                           |
 
 ## Configuration Structure
@@ -52,7 +52,7 @@ Only specified thresholds override defaults. Omitted fields keep default values.
 **If "View Current":**
 
 1. Read `~/.claude/hud/config.json` (if exists)
-2. Display all 16 thresholds in a table, marking custom values with `*`
+2. Display all 17 thresholds in a table, marking custom values with `*`
 3. Done.
 
 **If "Reset All":**
@@ -183,9 +183,9 @@ User on a team plan with higher budget:
   "preset": "cost-focused",
   "thresholds": {
     "session_cost_high": 20.0,
-    "session_cost_med": 5.0,
+    "session_cost_medium": 5.0,
     "cost_velocity_high": 2.0,
-    "cost_velocity_med": 0.5
+    "cost_velocity_medium": 0.5
   }
 }
 ```

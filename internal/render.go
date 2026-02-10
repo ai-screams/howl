@@ -325,7 +325,7 @@ func renderCost(usd float64, t Thresholds) string {
 	switch {
 	case usd >= t.SessionCostHigh:
 		color = boldRed
-	case usd >= t.SessionCostMed:
+	case usd >= t.SessionCostMedium:
 		color = yellow
 	default:
 		color = white
@@ -439,7 +439,7 @@ func renderCostVelocityLabeled(perMin float64, t Thresholds) string {
 	switch {
 	case perMin >= t.CostVelocityHigh:
 		color = boldRed
-	case perMin >= t.CostVelocityMed:
+	case perMin >= t.CostVelocityMedium:
 		color = yellow
 	default:
 		color = green

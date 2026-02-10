@@ -1755,3 +1755,196 @@ func TestRender_CustomDangerThreshold(t *testing.T) {
 		}
 	})
 }
+
+// ====== Custom Threshold Tests (Task #2) ======
+
+func TestRenderCost_CustomThresholds(t *testing.T) {
+	t.Parallel()
+
+	custom := DefaultThresholds()
+	custom.SessionCostHigh = 10.0
+	custom.SessionCostMedium = 3.0
+
+	tests := []struct {
+		name      string
+		usd       float64
+		wantColor string
+	}{
+		{"$4.99 is yellow (between 3.0 and 10.0)", 4.99, yellow},
+		{"$2.99 is white (below 3.0)", 2.99, white},
+		{"$10.0 is boldRed (at high)", 10.0, boldRed},
+		{"$15.0 is boldRed (above high)", 15.0, boldRed},
+		{"$3.0 is yellow (at medium)", 3.0, yellow},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := renderCost(tt.usd, custom)
+			if !strings.Contains(got, tt.wantColor) {
+				t.Errorf("renderCost(%f, custom) missing color %q in %q", tt.usd, tt.wantColor, got)
+			}
+		})
+	}
+}
+
+func TestCacheColor_CustomThresholds(t *testing.T) {
+	t.Parallel()
+
+	custom := DefaultThresholds()
+	custom.CacheExcellent = 90
+	custom.CacheGood = 60
+
+	tests := []struct {
+		name      string
+		pct       int
+		wantColor string
+	}{
+		{"75% is yellow (between 60-90)", 75, yellow},
+		{"59% is red (below 60)", 59, red},
+		{"90% is green (at excellent)", 90, green},
+		{"60% is yellow (at good)", 60, yellow},
+		{"95% is green (above excellent)", 95, green},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := cacheColor(tt.pct, custom)
+			if got != tt.wantColor {
+				t.Errorf("cacheColor(%d, custom) = %q, want %q", tt.pct, got, tt.wantColor)
+			}
+		})
+	}
+}
+
+func TestApiRatioColor_CustomThresholds(t *testing.T) {
+	t.Parallel()
+
+	custom := DefaultThresholds()
+	custom.WaitHigh = 80
+	custom.WaitMedium = 50
+
+	tests := []struct {
+		name      string
+		pct       int
+		wantColor string
+	}{
+		{"45% is green (below 50)", 45, green},
+		{"55% is yellow (between 50-80)", 55, yellow},
+		{"80% is red (at high)", 80, red},
+		{"50% is yellow (at medium)", 50, yellow},
+		{"90% is red (above high)", 90, red},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := apiRatioColor(tt.pct, custom)
+			if got != tt.wantColor {
+				t.Errorf("apiRatioColor(%d, custom) = %q, want %q", tt.pct, got, tt.wantColor)
+			}
+		})
+	}
+}
+
+func TestQuotaColor_CustomThresholds(t *testing.T) {
+	t.Parallel()
+
+	custom := DefaultThresholds()
+	custom.QuotaCritical = 20
+	custom.QuotaLow = 40
+	custom.QuotaMedium = 60
+	custom.QuotaHigh = 80
+
+	tests := []struct {
+		name      string
+		remaining float64
+		wantColor string
+	}{
+		{"15% is boldRed (below critical=20)", 15, boldRed},
+		{"30% is red (between critical=20 and low=40)", 30, red},
+		{"50% is orange (between low=40 and medium=60)", 50, orange},
+		{"70% is yellow (between medium=60 and high=80)", 70, yellow},
+		{"85% is green (above high=80)", 85, green},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := quotaColor(tt.remaining, custom)
+			if got != tt.wantColor {
+				t.Errorf("quotaColor(%f, custom) = %q, want %q", tt.remaining, got, tt.wantColor)
+			}
+		})
+	}
+}
+
+func TestRenderCostVelocityLabeled_CustomThresholds(t *testing.T) {
+	t.Parallel()
+
+	custom := DefaultThresholds()
+	custom.CostVelocityHigh = 1.0
+	custom.CostVelocityMedium = 0.30
+
+	tests := []struct {
+		name      string
+		perMin    float64
+		wantColor string
+	}{
+		{"$0.20/min is green (below 0.30)", 0.20, green},
+		{"$0.50/min is yellow (between 0.30-1.0)", 0.50, yellow},
+		{"$1.0/min is boldRed (at high)", 1.0, boldRed},
+		{"$0.30/min is yellow (at medium)", 0.30, yellow},
+		{"$2.0/min is boldRed (above high)", 2.0, boldRed},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := renderCostVelocityLabeled(tt.perMin, custom)
+			if !strings.Contains(got, tt.wantColor) {
+				t.Errorf("renderCostVelocityLabeled(%f, custom) missing color %q in %q", tt.perMin, tt.wantColor, got)
+			}
+			if !strings.Contains(got, "Cost:") {
+				t.Errorf("renderCostVelocityLabeled(%f, custom) missing 'Cost:' in %q", tt.perMin, got)
+			}
+		})
+	}
+}
+
+func TestRenderContextBar_CustomThresholdIcons(t *testing.T) {
+	t.Parallel()
+
+	custom := DefaultThresholds()
+	custom.ContextDanger = 90
+	custom.ContextWarning = 75
+	custom.ContextModerate = 40
+
+	cw := ContextWindow{ContextWindowSize: 200000}
+
+	tests := []struct {
+		name       string
+		percent    int
+		wantIcon   string
+		wantNoIcon string
+	}{
+		{"80% has warning icon", 80, "⚠", "🔴"},
+		{"85% has warning icon (not danger, danger=90)", 85, "⚠", "🔴"},
+		{"90% has danger icon", 90, "🔴", ""},
+		{"74% has no icon (below warning=75)", 74, "", "⚠"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := renderContextBar(tt.percent, cw, custom)
+			if tt.wantIcon != "" && !strings.Contains(got, tt.wantIcon) {
+				t.Errorf("renderContextBar(%d, custom) missing icon %q in %q", tt.percent, tt.wantIcon, got)
+			}
+			if tt.wantNoIcon != "" && strings.Contains(got, tt.wantNoIcon) {
+				t.Errorf("renderContextBar(%d, custom) should NOT contain icon %q in %q", tt.percent, tt.wantNoIcon, got)
+			}
+		})
+	}
+}

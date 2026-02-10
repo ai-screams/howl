@@ -390,7 +390,7 @@ func TestLoadConfig_PriorityWithInvalid(t *testing.T) {
 func TestDefaultThresholds(t *testing.T) {
 	th := DefaultThresholds()
 
-	// Verify all 16 fields match constants
+	// Verify all 17 fields match constants
 	if th.ContextDanger != DangerThreshold {
 		t.Errorf("ContextDanger: expected %d, got %d", DangerThreshold, th.ContextDanger)
 	}
@@ -403,8 +403,8 @@ func TestDefaultThresholds(t *testing.T) {
 	if th.SessionCostHigh != SessionCostHigh {
 		t.Errorf("SessionCostHigh: expected %.2f, got %.2f", SessionCostHigh, th.SessionCostHigh)
 	}
-	if th.SessionCostMed != SessionCostMedium {
-		t.Errorf("SessionCostMed: expected %.2f, got %.2f", SessionCostMedium, th.SessionCostMed)
+	if th.SessionCostMedium != SessionCostMedium {
+		t.Errorf("SessionCostMedium: expected %.2f, got %.2f", SessionCostMedium, th.SessionCostMedium)
 	}
 	if th.CacheExcellent != CacheExcellent {
 		t.Errorf("CacheExcellent: expected %d, got %d", CacheExcellent, th.CacheExcellent)
@@ -427,8 +427,8 @@ func TestDefaultThresholds(t *testing.T) {
 	if th.CostVelocityHigh != CostHigh {
 		t.Errorf("CostVelocityHigh: expected %.2f, got %.2f", CostHigh, th.CostVelocityHigh)
 	}
-	if th.CostVelocityMed != CostMedium {
-		t.Errorf("CostVelocityMed: expected %.2f, got %.2f", CostMedium, th.CostVelocityMed)
+	if th.CostVelocityMedium != CostMedium {
+		t.Errorf("CostVelocityMedium: expected %.2f, got %.2f", CostMedium, th.CostVelocityMedium)
 	}
 	if th.QuotaCritical != QuotaCritical {
 		t.Errorf("QuotaCritical: expected %.1f, got %.1f", float64(QuotaCritical), th.QuotaCritical)
@@ -465,11 +465,11 @@ func TestMergeThresholds_AllZero(t *testing.T) {
 func TestMergeThresholds_PartialOverride(t *testing.T) {
 	base := DefaultThresholds()
 	override := Thresholds{
-		ContextDanger:   90,
-		SpeedFast:       100,
-		SessionCostHigh: 10.0,
-		CostVelocityMed: 0.25,
-		QuotaCritical:   15.0,
+		ContextDanger:      90,
+		SpeedFast:          100,
+		SessionCostHigh:    10.0,
+		CostVelocityMedium: 0.25,
+		QuotaCritical:      15.0,
 	}
 
 	result := mergeThresholds(base, override)
@@ -486,8 +486,8 @@ func TestMergeThresholds_PartialOverride(t *testing.T) {
 	if result.SessionCostHigh != 10.0 {
 		t.Errorf("SessionCostHigh should be overridden: expected 10.0, got %.2f", result.SessionCostHigh)
 	}
-	if result.CostVelocityMed != 0.25 {
-		t.Errorf("CostVelocityMed should be overridden: expected 0.25, got %.2f", result.CostVelocityMed)
+	if result.CostVelocityMedium != 0.25 {
+		t.Errorf("CostVelocityMedium should be overridden: expected 0.25, got %.2f", result.CostVelocityMedium)
 	}
 	if result.QuotaCritical != 15.0 {
 		t.Errorf("QuotaCritical should be overridden: expected 15.0, got %.1f", result.QuotaCritical)
@@ -579,18 +579,18 @@ func TestValidateThresholds_InvertedContext(t *testing.T) {
 
 func TestValidateThresholds_InvertedCost(t *testing.T) {
 	th := Thresholds{
-		SessionCostHigh:  1.0,
-		SessionCostMed:   5.0,
-		CostVelocityHigh: 0.10,
-		CostVelocityMed:  0.50,
+		SessionCostHigh:    1.0,
+		SessionCostMedium:  5.0,
+		CostVelocityHigh:   0.10,
+		CostVelocityMedium: 0.50,
 	}
 	validateThresholds(&th)
 
-	if th.SessionCostMed >= th.SessionCostHigh {
-		t.Errorf("session cost med (%.2f) should be < high (%.2f)", th.SessionCostMed, th.SessionCostHigh)
+	if th.SessionCostMedium >= th.SessionCostHigh {
+		t.Errorf("session cost med (%.2f) should be < high (%.2f)", th.SessionCostMedium, th.SessionCostHigh)
 	}
-	if th.CostVelocityMed >= th.CostVelocityHigh {
-		t.Errorf("cost velocity med (%.2f) should be < high (%.2f)", th.CostVelocityMed, th.CostVelocityHigh)
+	if th.CostVelocityMedium >= th.CostVelocityHigh {
+		t.Errorf("cost velocity med (%.2f) should be < high (%.2f)", th.CostVelocityMedium, th.CostVelocityHigh)
 	}
 }
 
@@ -642,5 +642,238 @@ func TestLoadConfig_InvertedThresholdsCorrected(t *testing.T) {
 	if cfg.Thresholds.ContextWarning >= cfg.Thresholds.ContextDanger {
 		t.Errorf("LoadConfig should fix inverted thresholds: warning=%d >= danger=%d",
 			cfg.Thresholds.ContextWarning, cfg.Thresholds.ContextDanger)
+	}
+}
+
+func TestValidateThresholds_CascadeToNegative(t *testing.T) {
+	th := Thresholds{
+		ContextDanger:      6,
+		ContextWarning:     90, // will be clamped to danger-1 = 5
+		ContextModerate:    95, // will be clamped to warning-1 = 4
+		SessionCostHigh:    5.0,
+		SessionCostMedium:  1.0,
+		CacheExcellent:     80,
+		CacheGood:          50,
+		WaitHigh:           60,
+		WaitMedium:         35,
+		SpeedFast:          60,
+		SpeedModerate:      30,
+		CostVelocityHigh:   0.50,
+		CostVelocityMedium: 0.10,
+		QuotaCritical:      10,
+		QuotaLow:           25,
+		QuotaMedium:        50,
+		QuotaHigh:          75,
+	}
+	validateThresholds(&th)
+
+	if th.ContextWarning < 0 {
+		t.Errorf("ContextWarning should not be negative, got %d", th.ContextWarning)
+	}
+	if th.ContextModerate < 0 {
+		t.Errorf("ContextModerate should not be negative, got %d", th.ContextModerate)
+	}
+	if th.ContextWarning >= th.ContextDanger {
+		t.Errorf("ContextWarning (%d) should be < ContextDanger (%d)", th.ContextWarning, th.ContextDanger)
+	}
+	if th.ContextModerate >= th.ContextWarning {
+		t.Errorf("ContextModerate (%d) should be < ContextWarning (%d)", th.ContextModerate, th.ContextWarning)
+	}
+}
+
+func TestValidateThresholds_InvertedCacheWaitSpeed(t *testing.T) {
+	th := Thresholds{
+		ContextDanger:      85,
+		ContextWarning:     70,
+		ContextModerate:    50,
+		SessionCostHigh:    5.0,
+		SessionCostMedium:  1.0,
+		CacheExcellent:     40,
+		CacheGood:          80, // inverted: good > excellent
+		WaitHigh:           30,
+		WaitMedium:         60, // inverted: medium > high
+		SpeedFast:          20,
+		SpeedModerate:      50, // inverted: moderate > fast
+		CostVelocityHigh:   0.50,
+		CostVelocityMedium: 0.10,
+		QuotaCritical:      10,
+		QuotaLow:           25,
+		QuotaMedium:        50,
+		QuotaHigh:          75,
+	}
+	validateThresholds(&th)
+
+	if th.CacheGood >= th.CacheExcellent {
+		t.Errorf("CacheGood (%d) should be < CacheExcellent (%d)", th.CacheGood, th.CacheExcellent)
+	}
+	if th.WaitMedium >= th.WaitHigh {
+		t.Errorf("WaitMedium (%d) should be < WaitHigh (%d)", th.WaitMedium, th.WaitHigh)
+	}
+	if th.SpeedModerate >= th.SpeedFast {
+		t.Errorf("SpeedModerate (%d) should be < SpeedFast (%d)", th.SpeedModerate, th.SpeedFast)
+	}
+}
+
+func TestValidateThresholds_UpperBoundClamping(t *testing.T) {
+	th := Thresholds{
+		ContextDanger:      200,
+		ContextWarning:     150,
+		ContextModerate:    120,
+		SessionCostHigh:    5.0,
+		SessionCostMedium:  1.0,
+		CacheExcellent:     200,
+		CacheGood:          150,
+		WaitHigh:           200,
+		WaitMedium:         150,
+		SpeedFast:          60,
+		SpeedModerate:      30,
+		CostVelocityHigh:   0.50,
+		CostVelocityMedium: 0.10,
+		QuotaCritical:      10,
+		QuotaLow:           25,
+		QuotaMedium:        50,
+		QuotaHigh:          200,
+	}
+	validateThresholds(&th)
+
+	if th.ContextDanger > 100 {
+		t.Errorf("ContextDanger should be clamped to 100, got %d", th.ContextDanger)
+	}
+	if th.ContextWarning > 100 {
+		t.Errorf("ContextWarning should be clamped to <=100, got %d", th.ContextWarning)
+	}
+	if th.ContextModerate > 100 {
+		t.Errorf("ContextModerate should be clamped to <=100, got %d", th.ContextModerate)
+	}
+	if th.CacheExcellent > 100 {
+		t.Errorf("CacheExcellent should be clamped to 100, got %d", th.CacheExcellent)
+	}
+	if th.CacheGood > 100 {
+		t.Errorf("CacheGood should be clamped to <=100, got %d", th.CacheGood)
+	}
+	if th.WaitHigh > 100 {
+		t.Errorf("WaitHigh should be clamped to 100, got %d", th.WaitHigh)
+	}
+	if th.WaitMedium > 100 {
+		t.Errorf("WaitMedium should be clamped to <=100, got %d", th.WaitMedium)
+	}
+	if th.QuotaHigh > 100 {
+		t.Errorf("QuotaHigh should be clamped to 100, got %.1f", th.QuotaHigh)
+	}
+}
+
+func TestMergeThresholds_AllOverridden(t *testing.T) {
+	base := DefaultThresholds()
+	override := Thresholds{
+		ContextDanger:      95,
+		ContextWarning:     80,
+		ContextModerate:    60,
+		SessionCostHigh:    10.0,
+		SessionCostMedium:  2.0,
+		CacheExcellent:     90,
+		CacheGood:          60,
+		WaitHigh:           70,
+		WaitMedium:         40,
+		SpeedFast:          80,
+		SpeedModerate:      40,
+		CostVelocityHigh:   1.0,
+		CostVelocityMedium: 0.20,
+		QuotaCritical:      15,
+		QuotaLow:           30,
+		QuotaMedium:        55,
+		QuotaHigh:          80,
+	}
+
+	result := mergeThresholds(base, override)
+
+	if result.ContextDanger != 95 {
+		t.Errorf("ContextDanger: expected 95, got %d", result.ContextDanger)
+	}
+	if result.ContextWarning != 80 {
+		t.Errorf("ContextWarning: expected 80, got %d", result.ContextWarning)
+	}
+	if result.ContextModerate != 60 {
+		t.Errorf("ContextModerate: expected 60, got %d", result.ContextModerate)
+	}
+	if result.SessionCostHigh != 10.0 {
+		t.Errorf("SessionCostHigh: expected 10.0, got %.2f", result.SessionCostHigh)
+	}
+	if result.SessionCostMedium != 2.0 {
+		t.Errorf("SessionCostMedium: expected 2.0, got %.2f", result.SessionCostMedium)
+	}
+	if result.CacheExcellent != 90 {
+		t.Errorf("CacheExcellent: expected 90, got %d", result.CacheExcellent)
+	}
+	if result.CacheGood != 60 {
+		t.Errorf("CacheGood: expected 60, got %d", result.CacheGood)
+	}
+	if result.WaitHigh != 70 {
+		t.Errorf("WaitHigh: expected 70, got %d", result.WaitHigh)
+	}
+	if result.WaitMedium != 40 {
+		t.Errorf("WaitMedium: expected 40, got %d", result.WaitMedium)
+	}
+	if result.SpeedFast != 80 {
+		t.Errorf("SpeedFast: expected 80, got %d", result.SpeedFast)
+	}
+	if result.SpeedModerate != 40 {
+		t.Errorf("SpeedModerate: expected 40, got %d", result.SpeedModerate)
+	}
+	if result.CostVelocityHigh != 1.0 {
+		t.Errorf("CostVelocityHigh: expected 1.0, got %.2f", result.CostVelocityHigh)
+	}
+	if result.CostVelocityMedium != 0.20 {
+		t.Errorf("CostVelocityMedium: expected 0.20, got %.2f", result.CostVelocityMedium)
+	}
+	if result.QuotaCritical != 15 {
+		t.Errorf("QuotaCritical: expected 15, got %.1f", result.QuotaCritical)
+	}
+	if result.QuotaLow != 30 {
+		t.Errorf("QuotaLow: expected 30, got %.1f", result.QuotaLow)
+	}
+	if result.QuotaMedium != 55 {
+		t.Errorf("QuotaMedium: expected 55, got %.1f", result.QuotaMedium)
+	}
+	if result.QuotaHigh != 80 {
+		t.Errorf("QuotaHigh: expected 80, got %.1f", result.QuotaHigh)
+	}
+}
+
+func TestValidateThresholds_QuotaCriticalHigh(t *testing.T) {
+	// quota_critical=98 caused cascade collapse: low=99, medium=100, high=101→clamped to 100
+	// Now critical is capped at 97 to prevent this.
+	th := DefaultThresholds()
+	th.QuotaCritical = 99 // will be clamped to 97
+	validateThresholds(&th)
+
+	if th.QuotaCritical > 97 {
+		t.Errorf("QuotaCritical should be clamped to 97, got %.1f", th.QuotaCritical)
+	}
+	if th.QuotaLow <= th.QuotaCritical {
+		t.Errorf("QuotaLow (%.1f) should be > QuotaCritical (%.1f)", th.QuotaLow, th.QuotaCritical)
+	}
+	if th.QuotaMedium <= th.QuotaLow {
+		t.Errorf("QuotaMedium (%.1f) should be > QuotaLow (%.1f)", th.QuotaMedium, th.QuotaLow)
+	}
+	if th.QuotaHigh <= th.QuotaMedium {
+		t.Errorf("QuotaHigh (%.1f) should be > QuotaMedium (%.1f)", th.QuotaHigh, th.QuotaMedium)
+	}
+	if th.QuotaHigh > 100 {
+		t.Errorf("QuotaHigh should not exceed 100, got %.1f", th.QuotaHigh)
+	}
+}
+
+func TestValidateThresholds_SpeedFastMinimum(t *testing.T) {
+	// SpeedFast=1 caused SpeedModerate equality (both=1).
+	// Now SpeedFast minimum is 2.
+	th := DefaultThresholds()
+	th.SpeedFast = 1
+	validateThresholds(&th)
+
+	if th.SpeedFast < 2 {
+		t.Errorf("SpeedFast should be clamped to minimum 2, got %d", th.SpeedFast)
+	}
+	if th.SpeedModerate >= th.SpeedFast {
+		t.Errorf("SpeedModerate (%d) should be < SpeedFast (%d)", th.SpeedModerate, th.SpeedFast)
 	}
 }

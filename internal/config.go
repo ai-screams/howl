@@ -29,23 +29,23 @@ type Config struct {
 // Thresholds controls when colors and behavior modes change.
 // Zero values mean "use default" — only positive values override.
 type Thresholds struct {
-	ContextDanger    int     `json:"context_danger"`     // Context % to trigger danger mode (default 85)
-	ContextWarning   int     `json:"context_warning"`    // Context % to show warning (default 70)
-	ContextModerate  int     `json:"context_moderate"`   // Context % for yellow (default 50)
-	SessionCostHigh  float64 `json:"session_cost_high"`  // Session cost USD for red (default 5.0)
-	SessionCostMed   float64 `json:"session_cost_med"`   // Session cost USD for yellow (default 1.0)
-	CacheExcellent   int     `json:"cache_excellent"`    // Cache % for green (default 80)
-	CacheGood        int     `json:"cache_good"`         // Cache % for yellow (default 50)
-	WaitHigh         int     `json:"wait_high"`          // API wait % for red (default 60)
-	WaitMedium       int     `json:"wait_medium"`        // API wait % for yellow (default 35)
-	SpeedFast        int     `json:"speed_fast"`         // tok/s for green (default 60)
-	SpeedModerate    int     `json:"speed_moderate"`     // tok/s for yellow (default 30)
-	CostVelocityHigh float64 `json:"cost_velocity_high"` // $/min for red (default 0.50)
-	CostVelocityMed  float64 `json:"cost_velocity_med"`  // $/min for yellow (default 0.10)
-	QuotaCritical    float64 `json:"quota_critical"`     // Remaining % for bold red (default 10)
-	QuotaLow         float64 `json:"quota_low"`          // Remaining % for red (default 25)
-	QuotaMedium      float64 `json:"quota_medium"`       // Remaining % for orange (default 50)
-	QuotaHigh        float64 `json:"quota_high"`         // Remaining % for yellow (default 75)
+	ContextDanger      int     `json:"context_danger"`       // Context % to trigger danger mode (default 85)
+	ContextWarning     int     `json:"context_warning"`      // Context % to show warning (default 70)
+	ContextModerate    int     `json:"context_moderate"`     // Context % for yellow (default 50)
+	SessionCostHigh    float64 `json:"session_cost_high"`    // Session cost USD for red (default 5.0)
+	SessionCostMedium  float64 `json:"session_cost_medium"`  // Session cost USD for yellow (default 1.0)
+	CacheExcellent     int     `json:"cache_excellent"`      // Cache % for green (default 80)
+	CacheGood          int     `json:"cache_good"`           // Cache % for yellow (default 50)
+	WaitHigh           int     `json:"wait_high"`            // API wait % for red (default 60)
+	WaitMedium         int     `json:"wait_medium"`          // API wait % for yellow (default 35)
+	SpeedFast          int     `json:"speed_fast"`           // tok/s for green (default 60)
+	SpeedModerate      int     `json:"speed_moderate"`       // tok/s for yellow (default 30)
+	CostVelocityHigh   float64 `json:"cost_velocity_high"`   // $/min for red (default 0.50)
+	CostVelocityMedium float64 `json:"cost_velocity_medium"` // $/min for yellow (default 0.10)
+	QuotaCritical      float64 `json:"quota_critical"`       // Remaining % for bold red (default 10)
+	QuotaLow           float64 `json:"quota_low"`            // Remaining % for red (default 25)
+	QuotaMedium        float64 `json:"quota_medium"`         // Remaining % for orange (default 50)
+	QuotaHigh          float64 `json:"quota_high"`           // Remaining % for yellow (default 75)
 }
 
 // FeatureToggles controls which metrics are displayed.
@@ -142,23 +142,23 @@ func mergeFeatures(base, override FeatureToggles) FeatureToggles {
 // DefaultThresholds returns Thresholds populated from constants.go values.
 func DefaultThresholds() Thresholds {
 	return Thresholds{
-		ContextDanger:    DangerThreshold,
-		ContextWarning:   WarningThreshold,
-		ContextModerate:  ModerateThreshold,
-		SessionCostHigh:  SessionCostHigh,
-		SessionCostMed:   SessionCostMedium,
-		CacheExcellent:   CacheExcellent,
-		CacheGood:        CacheGood,
-		WaitHigh:         WaitHigh,
-		WaitMedium:       WaitMedium,
-		SpeedFast:        SpeedFast,
-		SpeedModerate:    SpeedModerate,
-		CostVelocityHigh: CostHigh,
-		CostVelocityMed:  CostMedium,
-		QuotaCritical:    QuotaCritical,
-		QuotaLow:         QuotaLow,
-		QuotaMedium:      QuotaMedium,
-		QuotaHigh:        QuotaHigh,
+		ContextDanger:      DangerThreshold,
+		ContextWarning:     WarningThreshold,
+		ContextModerate:    ModerateThreshold,
+		SessionCostHigh:    SessionCostHigh,
+		SessionCostMedium:  SessionCostMedium,
+		CacheExcellent:     CacheExcellent,
+		CacheGood:          CacheGood,
+		WaitHigh:           WaitHigh,
+		WaitMedium:         WaitMedium,
+		SpeedFast:          SpeedFast,
+		SpeedModerate:      SpeedModerate,
+		CostVelocityHigh:   CostHigh,
+		CostVelocityMedium: CostMedium,
+		QuotaCritical:      QuotaCritical,
+		QuotaLow:           QuotaLow,
+		QuotaMedium:        QuotaMedium,
+		QuotaHigh:          QuotaHigh,
 	}
 }
 
@@ -178,8 +178,8 @@ func mergeThresholds(base, override Thresholds) Thresholds {
 	if override.SessionCostHigh > 0 {
 		result.SessionCostHigh = override.SessionCostHigh
 	}
-	if override.SessionCostMed > 0 {
-		result.SessionCostMed = override.SessionCostMed
+	if override.SessionCostMedium > 0 {
+		result.SessionCostMedium = override.SessionCostMedium
 	}
 	if override.CacheExcellent > 0 {
 		result.CacheExcellent = override.CacheExcellent
@@ -202,8 +202,8 @@ func mergeThresholds(base, override Thresholds) Thresholds {
 	if override.CostVelocityHigh > 0 {
 		result.CostVelocityHigh = override.CostVelocityHigh
 	}
-	if override.CostVelocityMed > 0 {
-		result.CostVelocityMed = override.CostVelocityMed
+	if override.CostVelocityMedium > 0 {
+		result.CostVelocityMedium = override.CostVelocityMedium
 	}
 	if override.QuotaCritical > 0 {
 		result.QuotaCritical = override.QuotaCritical
@@ -220,46 +220,76 @@ func mergeThresholds(base, override Thresholds) Thresholds {
 	return result
 }
 
-// validateThresholds fixes inverted threshold pairs.
-// If high <= low for a pair, low is clamped to high - 1 (int) or high * 0.5 (float64).
+// validateThresholds clamps all values to valid ranges, fixes inversions, and re-clamps.
 func validateThresholds(t *Thresholds) {
+	// Step 1: Clamp all values to valid ranges.
+
+	// Percentage-based: 0-100
+	t.ContextDanger = max(0, min(t.ContextDanger, 100))
+	t.ContextWarning = max(0, min(t.ContextWarning, 100))
+	t.ContextModerate = max(0, min(t.ContextModerate, 100))
+	t.CacheExcellent = max(0, min(t.CacheExcellent, 100))
+	t.CacheGood = max(0, min(t.CacheGood, 100))
+	t.WaitHigh = max(0, min(t.WaitHigh, 100))
+	t.WaitMedium = max(0, min(t.WaitMedium, 100))
+
+	// Speed: fast minimum 2 (to allow moderate >= 1), moderate minimum 1
+	t.SpeedFast = max(2, t.SpeedFast)
+	t.SpeedModerate = max(1, t.SpeedModerate)
+
+	// Cost: minimum 0.01
+	t.SessionCostHigh = max(0.01, t.SessionCostHigh)
+	t.SessionCostMedium = max(0.01, t.SessionCostMedium)
+	t.CostVelocityHigh = max(0.01, t.CostVelocityHigh)
+	t.CostVelocityMedium = max(0.01, t.CostVelocityMedium)
+
+	// Quota: 0-100, critical capped at 97 to leave room for 3 increments (low, medium, high)
+	t.QuotaCritical = max(0, min(t.QuotaCritical, 97))
+	t.QuotaLow = max(0, min(t.QuotaLow, 100))
+	t.QuotaMedium = max(0, min(t.QuotaMedium, 100))
+	t.QuotaHigh = max(0, min(t.QuotaHigh, 100))
+
+	// Step 2: Fix inversions.
+
 	// Context: danger > warning > moderate
-	if t.ContextWarning >= t.ContextDanger {
-		t.ContextWarning = t.ContextDanger - 5
+	t.ContextWarning = max(0, min(t.ContextWarning, t.ContextDanger-1))
+	t.ContextModerate = max(0, min(t.ContextModerate, t.ContextWarning-1))
+
+	// Session cost: high > medium
+	if t.SessionCostMedium >= t.SessionCostHigh {
+		t.SessionCostMedium = max(0.01, t.SessionCostHigh*0.5)
 	}
-	if t.ContextModerate >= t.ContextWarning {
-		t.ContextModerate = t.ContextWarning - 5
-	}
-	// Session cost: high > med
-	if t.SessionCostMed >= t.SessionCostHigh {
-		t.SessionCostMed = t.SessionCostHigh * 0.5
-	}
+
 	// Cache: excellent > good
-	if t.CacheGood >= t.CacheExcellent {
-		t.CacheGood = t.CacheExcellent - 10
-	}
+	t.CacheGood = max(0, min(t.CacheGood, t.CacheExcellent-1))
+
 	// API wait: high > medium
-	if t.WaitMedium >= t.WaitHigh {
-		t.WaitMedium = t.WaitHigh - 10
-	}
+	t.WaitMedium = max(0, min(t.WaitMedium, t.WaitHigh-1))
+
 	// Speed: fast > moderate
-	if t.SpeedModerate >= t.SpeedFast {
-		t.SpeedModerate = t.SpeedFast - 10
+	t.SpeedModerate = max(1, min(t.SpeedModerate, t.SpeedFast-1))
+
+	// Cost velocity: high > medium
+	if t.CostVelocityMedium >= t.CostVelocityHigh {
+		t.CostVelocityMedium = max(0.01, t.CostVelocityHigh*0.5)
 	}
-	// Cost velocity: high > med
-	if t.CostVelocityMed >= t.CostVelocityHigh {
-		t.CostVelocityMed = t.CostVelocityHigh * 0.5
-	}
+
 	// Quota: critical < low < medium < high
-	if t.QuotaLow <= t.QuotaCritical {
-		t.QuotaLow = t.QuotaCritical + 5
-	}
-	if t.QuotaMedium <= t.QuotaLow {
-		t.QuotaMedium = t.QuotaLow + 5
-	}
-	if t.QuotaHigh <= t.QuotaMedium {
-		t.QuotaHigh = t.QuotaMedium + 5
-	}
+	t.QuotaLow = max(t.QuotaLow, t.QuotaCritical+1)
+	t.QuotaMedium = max(t.QuotaMedium, t.QuotaLow+1)
+	t.QuotaHigh = max(t.QuotaHigh, t.QuotaMedium+1)
+
+	// Step 3: Re-clamp after corrections.
+	t.ContextWarning = max(0, min(t.ContextWarning, 100))
+	t.ContextModerate = max(0, min(t.ContextModerate, 100))
+	t.CacheGood = max(0, min(t.CacheGood, 100))
+	t.WaitMedium = max(0, min(t.WaitMedium, 100))
+	t.SpeedModerate = max(1, t.SpeedModerate)
+	t.SessionCostMedium = max(0.01, t.SessionCostMedium)
+	t.CostVelocityMedium = max(0.01, t.CostVelocityMedium)
+	t.QuotaLow = max(0, min(t.QuotaLow, 100))
+	t.QuotaMedium = max(0, min(t.QuotaMedium, 100))
+	t.QuotaHigh = max(0, min(t.QuotaHigh, 100))
 }
 
 // validatePriority normalizes, deduplicates, and validates priority list.

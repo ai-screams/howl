@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-02-11
+
+### Added
+
+- Configurable color/behavior thresholds: 17-field `Thresholds` struct in config with `mergeThresholds()` and `validateThresholds()` (3-step clamping: type → range → pair ordering)
+- `/howl:threshold` skill for interactive threshold configuration (7 groups, view/reset, pair validation)
+- CLAUDE.md for Claude Code onboarding
+
+### Fixed
+
+- Threshold validation hardened: negative values clamped to 0, percentages capped at 100, low/high pair ordering enforced
+- 15 render functions refactored from hardcoded constants to `Thresholds` parameter (zero-value guard preserves backward compatibility)
+- `workflow_dispatch` trigger added to release.yaml (fallback for auto-release tag push event race condition)
+
+### Changed
+
+- Test coverage 95.6% → 96.1% (113 → 139 tests, +26 threshold-specific tests)
+- All documentation synced with custom thresholds feature (CLAUDE.md, README.md, skill files)
+
 ## [1.5.0] - 2026-02-10
 
 ### Added
@@ -113,7 +132,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extract magic numbers to constants
 - Remove deprecated and unused render functions
 
-[Unreleased]: https://github.com/ai-screams/Howl/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/ai-screams/Howl/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/ai-screams/Howl/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/ai-screams/Howl/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/ai-screams/Howl/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/ai-screams/Howl/compare/v1.2.0...v1.3.0

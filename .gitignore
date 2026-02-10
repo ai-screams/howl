@@ -468,5 +468,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/osx,windows,linux,git,python,go,vim,emacs,jetbrains+all,visualstudiocode,virtualenv

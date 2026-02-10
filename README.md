@@ -13,8 +13,8 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/ai-screams/Howl?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/graphs/commit-activity)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/Howl/ci.yaml?label=CI&logo=githubactions&logoColor=white)](https://github.com/ai-screams/Howl/actions)
-[![Coverage](https://img.shields.io/badge/Coverage-95.6%25-brightgreen?logo=go&logoColor=white)]()
-[![Tests](https://img.shields.io/badge/Tests-113%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
+[![Coverage](https://img.shields.io/badge/Coverage-96.1%25-brightgreen?logo=go&logoColor=white)]()
+[![Tests](https://img.shields.io/badge/Tests-139%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
 [![Go Report](https://goreportcard.com/badge/github.com/ai-screams/howl)](https://goreportcard.com/report/github.com/ai-screams/howl)
 [![Go Reference](https://pkg.go.dev/badge/github.com/ai-screams/howl.svg)](https://pkg.go.dev/github.com/ai-screams/howl)
 [![Security](https://img.shields.io/badge/govulncheck-passing-brightgreen?logo=go&logoColor=white)]()
@@ -47,6 +47,7 @@ _Real-time statusline HUD showing 1M context session with 13 intelligent metrics
 - [Performance](#performance)
 - [Development](#development)
 - [Configuration](#configuration)
+  - [Custom Thresholds](#custom-thresholds)
 - [Uninstallation](#uninstallation)
 - [Troubleshooting](#troubleshooting)
 - [Why Howl?](#why-howl)
@@ -81,10 +82,17 @@ _Real-time statusline HUD showing 1M context session with 13 intelligent metrics
 - **Active Agents** — See running subagents in real-time
 - **Vim Mode** — N/I/V indicators for modal editing
 
+### ⚡ **Custom Thresholds**
+
+- **17 Configurable Values** — Control when every color changes and when danger mode activates
+- **Per-Group Tuning** — Context, cost, cache, speed, API wait, cost velocity, quota
+- **Interactive Setup** — Use `/howl:threshold` to adjust values conversationally
+- **Safe Defaults** — Invalid values auto-corrected, zero values ignored
+
 ### 🎨 **Adaptive Layouts**
 
-- **Normal Mode** (< 85% context) — 2-4 line display (lines added as features activate)
-- **Danger Mode** (85%+ context) — Dense 2-line view with token breakdown and hourly cost
+- **Normal Mode** (< 85% context, configurable) — 2-4 line display (lines added as features activate)
+- **Danger Mode** (85%+ context, configurable) — Dense 2-line view with token breakdown and hourly cost
 - **Smart Grouping** — Logical organization of related metrics
 
 ---
@@ -112,7 +120,7 @@ The `/howl:setup` skill automatically:
 - Configures `~/.claude/settings.json`
 - Backs up existing settings
 
-After installation, use `/howl:configure` to choose a preset, or `/howl:customize` for fine-grained metric toggles and priority ordering.
+After installation, use `/howl:configure` to choose a preset, `/howl:customize` for fine-grained metric toggles and priority ordering, or `/howl:threshold` to tune color breakpoints and danger mode trigger.
 
 #### Via Official Marketplace (Coming Soon)
 
@@ -231,6 +239,8 @@ hud/main | +328/-67 | In:0K Out:0K Cache:212K | 15tok/s | C99% | A6% | $0.8/h | 
 | **(2h)5h: 55%**  | 5-hour quota: 55% remaining, resets in 2 hours  | Gradient based on % remaining                     |
 | **:7d(3d6h)**    | 7-day quota: 42% remaining, resets in 3d6h      | Gradient based on % remaining                     |
 
+> **Tip:** All color thresholds above are defaults. You can customize every breakpoint via `/howl:threshold` or `~/.claude/hud/config.json`. See [Custom Thresholds](#custom-thresholds) below.
+
 ---
 
 ## Architecture
@@ -291,7 +301,8 @@ howl/
 ├── skills/
 │   ├── setup/SKILL.md       # /howl:setup (installation)
 │   ├── configure/SKILL.md   # /howl:configure (preset selection)
-│   └── customize/SKILL.md   # /howl:customize (metric toggles)
+│   ├── customize/SKILL.md   # /howl:customize (metric toggles)
+│   └── threshold/SKILL.md   # /howl:threshold (color thresholds)
 ├── .claude-plugin/          # Claude Code plugin metadata
 ├── Makefile                 # Build automation
 └── go.mod                   # Go module definition
@@ -299,10 +310,11 @@ howl/
 
 ### Key Modules
 
-- **constants.go** — All threshold constants (danger %, cache %, speed, cost, quotas, timeouts)
+- **constants.go** — Default threshold constants (danger %, cache %, speed, cost, quotas, timeouts)
+- **config.go** — Configuration system with presets, feature toggles, priority ordering, and 17 customizable thresholds
 - **types.go** — StdinData schema matching Claude Code's JSON output, model tier classification
 - **metrics.go** — Cache efficiency, API ratio, cost velocity, response speed calculations
-- **render.go** — ANSI color codes, adaptive layouts (normal 2-4 lines / danger 2 lines)
+- **render.go** — ANSI color codes, adaptive layouts (normal 2-4 lines / danger 2 lines), threshold-driven colors
 - **git.go** — Branch detection with graceful 1s timeout
 - **usage.go** — Anthropic OAuth API client with session-scoped 60s caching
 - **transcript.go** — Tool usage extraction from conversation history (last ~100 lines)
@@ -389,6 +401,41 @@ func renderNewMetric(val int) string {
 ---
 
 ## ⚙️ Configuration
+
+### Custom Thresholds
+
+All 17 color breakpoints and the danger mode trigger are configurable via `~/.claude/hud/config.json`:
+
+```json
+{
+  "preset": "full",
+  "thresholds": {
+    "context_danger": 92,
+    "context_warning": 80,
+    "session_cost_high": 20.0,
+    "speed_fast": 100,
+    "quota_high": 90
+  }
+}
+```
+
+Only specified values override defaults — omitted fields keep their default values.
+
+| Group             | Thresholds                                                  | Defaults                     | Effect                                       |
+| ----------------- | ----------------------------------------------------------- | ---------------------------- | -------------------------------------------- |
+| **Context**       | `context_danger`, `context_warning`, `context_moderate`     | 85%, 70%, 50%                | Danger mode trigger, warning/moderate colors |
+| **Session Cost**  | `session_cost_high`, `session_cost_medium`                  | $5.00, $1.00                 | Cost display color                           |
+| **Cache**         | `cache_excellent`, `cache_good`                             | 80%, 50%                     | Cache efficiency color                       |
+| **API Wait**      | `wait_high`, `wait_medium`                                  | 60%, 35%                     | API wait ratio color                         |
+| **Speed**         | `speed_fast`, `speed_moderate`                              | 60, 30 tok/s                 | Response speed color                         |
+| **Cost Velocity** | `cost_velocity_high`, `cost_velocity_medium`                | $0.50, $0.10/min             | Cost velocity color                          |
+| **Quota**         | `quota_critical`, `quota_low`, `quota_medium`, `quota_high` | 10%, 25%, 50%, 75% remaining | Quota color bands                            |
+
+**Interactive setup:** Run `/howl:threshold` in Claude Code to adjust values conversationally — choose a group, set values, and see before/after comparisons.
+
+**Validation:** Invalid values are auto-corrected (inverted pairs clamped, out-of-range values bounded). Zero or negative values are ignored. Malformed JSON falls back to all defaults silently.
+
+Changes apply on the next refresh (~300ms) — no restart needed.
 
 ### OAuth Credentials
 
@@ -489,6 +536,7 @@ Howl was created to solve specific pain points with existing Claude Code statusl
 
 - [x] Configuration file support (`~/.claude/hud/config.json`) — _Available in v1.3.0+_
 - [x] Auto-sync plugin.json version in release pipeline — _Available in v1.4.0+_
+- [x] Custom thresholds — 17 configurable color breakpoints and danger mode trigger — _Available in v1.5.0+_
 - [ ] Custom color schemes
 - [ ] Plugin system for custom metrics
 - [ ] Windows support

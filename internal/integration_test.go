@@ -832,3 +832,57 @@ func TestIntegration_PriorityOrdering(t *testing.T) {
 			gitPos, accountPos, line2)
 	}
 }
+
+func TestIntegration_CustomThresholds(t *testing.T) {
+	t.Parallel()
+
+	// Use boundary 85% JSON — at default danger (85) this would be danger mode (2 lines).
+	// With custom ContextDanger=90, 85% should stay in normal mode (>2 lines).
+	var d StdinData
+	if err := json.Unmarshal([]byte(jsonBoundary85), &d); err != nil {
+		t.Fatalf("JSON parse error: %v", err)
+	}
+
+	m := ComputeMetrics(&d)
+
+	// Verify the JSON produces 85% context
+	if m.ContextPercent != 85 {
+		t.Fatalf("expected ContextPercent=85, got %d", m.ContextPercent)
+	}
+
+	// With default config, 85% triggers danger mode (exactly 2 lines)
+	defaultCfg := DefaultConfig()
+	dangerLines := Render(&d, m, nil, nil, nil, nil, defaultCfg)
+	if len(dangerLines) != 2 {
+		t.Fatalf("default config at 85%% should produce danger mode (2 lines), got %d", len(dangerLines))
+	}
+
+	// With custom ContextDanger=90, 85% should be normal mode (more than 2 lines)
+	customCfg := DefaultConfig()
+	customCfg.Thresholds.ContextDanger = 90
+	// Ensure warning is adjusted below new danger to avoid validateThresholds clamping
+	customCfg.Thresholds.ContextWarning = 80
+
+	git := &GitInfo{Branch: "main", Dirty: true}
+	normalLines := Render(&d, m, git, nil, nil, nil, customCfg)
+
+	if len(normalLines) <= 2 {
+		t.Errorf("custom danger=90 at 85%% should produce normal mode (>2 lines), got %d lines", len(normalLines))
+	}
+
+	// Normal mode should NOT have the danger indicator
+	output := strings.Join(normalLines, " ")
+	if strings.Contains(output, "🔴") {
+		t.Error("normal mode (custom danger=90, context=85%%) should not contain danger indicator 🔴")
+	}
+
+	// Should contain the warning indicator since 85% >= ContextWarning=80
+	if !strings.Contains(output, "⚠") {
+		t.Error("85%% with warning=80 should contain warning indicator ⚠")
+	}
+
+	// Verify git info is present (normal mode shows it, danger mode may not)
+	if !strings.Contains(output, "main*") {
+		t.Error("normal mode should show git branch 'main*'")
+	}
+}

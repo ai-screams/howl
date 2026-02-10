@@ -15,13 +15,17 @@ Advanced configuration for Howl statusline: choose a base preset, toggle individ
   "features": {
     "quota": true
   },
-  "priority": ["quota", "git"]
+  "priority": ["quota", "git"],
+  "thresholds": {
+    "context_danger": 90
+  }
 }
 ```
 
 - **preset**: Base configuration (`full`, `minimal`, `developer`, `cost-focused`)
 - **features**: Override specific metrics from the preset base (optional)
 - **priority**: Reorder Line 2 metrics by importance (optional, max 5)
+- **thresholds**: Override color/behavior breakpoints (optional, see `/howl:threshold`)
 
 ## Process
 
@@ -232,9 +236,9 @@ cat ~/.claude/hud/config.json
 
 ### Danger Mode Override
 
-**When context usage reaches 85% or higher, Howl automatically switches to full information mode regardless of your configuration.** This ensures complete visibility during critical situations.
+**When context usage reaches the danger threshold (default 85%), Howl automatically switches to full information mode regardless of your configuration.** This ensures complete visibility during critical situations.
 
-This override cannot be disabled - it's a safety feature to prevent context exhaustion.
+This override cannot be disabled - it's a safety feature. The trigger point can be adjusted via `/howl:threshold` or the `context_danger` field in config.json.
 
 ### Configuration Validation
 
@@ -259,6 +263,10 @@ Configuration changes apply on the next statusline refresh (~300ms). No restart 
 ### Quick Switch Between Presets
 
 If user just wants to switch presets without customization, recommend using `/howl:configure` instead - it's faster for simple preset changes.
+
+### Color Thresholds
+
+To customize when colors change (e.g., danger mode trigger, cost warning levels), use `/howl:threshold` instead. This skill focuses on **which** metrics are displayed; `/howl:threshold` controls **when** they change color.
 
 ## Example Dialogue
 

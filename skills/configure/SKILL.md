@@ -101,9 +101,9 @@ If the file doesn't exist, you're using `full` (default).
 
 ### Danger Mode Override
 
-**When context usage reaches 85% or higher, Howl automatically switches to full information mode regardless of your chosen preset.** This ensures you have complete visibility during critical situations when you're approaching context limits.
+**When context usage reaches the danger threshold (default 85%), Howl automatically switches to full information mode regardless of your chosen preset.** This ensures you have complete visibility during critical situations when you're approaching context limits.
 
-This behavior cannot be disabled - it's a safety feature to prevent silent context exhaustion.
+This behavior cannot be disabled - it's a safety feature. The trigger point can be adjusted via `/howl:threshold` or the `context_danger` field in `~/.claude/hud/config.json`.
 
 ### What Gets Hidden in Each Preset
 
@@ -131,5 +131,6 @@ Agent: Here's what minimal will look like:
 Applying configuration...
 ✅ Preset set to minimal. Changes will appear in ~300ms.
 
-Note: If context reaches 85%, Howl will temporarily show full info for safety.
+Note: At the danger threshold (default 85%), Howl will temporarily show full info for safety.
+You can adjust this via /howl:threshold.
 ```

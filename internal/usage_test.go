@@ -75,7 +75,7 @@ func TestQuotaColor(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := quotaColor(tt.remaining)
+			got := quotaColor(tt.remaining, DefaultThresholds())
 			if got != tt.want {
 				t.Errorf("quotaColor(%v) = %q, want %q", tt.remaining, got, tt.want)
 			}
@@ -249,7 +249,7 @@ func TestRenderQuota(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := renderQuota(tt.usage)
+			got := renderQuota(tt.usage, DefaultThresholds())
 
 			for _, want := range tt.wantContains {
 				if !strings.Contains(got, want) {

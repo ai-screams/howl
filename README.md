@@ -4,13 +4,13 @@
 
 A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claude.com) written in Go. Provides real-time visibility into your AI coding session with intelligent metrics, usage tracking, and adaptive layouts.
 
-[![Language](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go)](https://go.dev)
+[![Language](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
 [![Size](https://img.shields.io/badge/Binary-5.2MB-blue)]()
 [![Speed](https://img.shields.io/badge/Cold%20Start-~10ms-green)]()
 [![Release](https://img.shields.io/github/v/release/ai-screams/Howl)](https://github.com/ai-screams/Howl/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/Howl/release.yaml?label=CI)](https://github.com/ai-screams/Howl/actions)
-[![Coverage](https://img.shields.io/badge/Coverage-76%25-brightgreen)]()
+[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/Howl/ci.yaml?label=CI)](https://github.com/ai-screams/Howl/actions)
+[![Coverage](https://img.shields.io/badge/Coverage-75.7%25-brightgreen)]()
 
 ---
 
@@ -94,6 +94,8 @@ The `/howl:setup` skill automatically:
 - Configures `~/.claude/settings.json`
 - Backs up existing settings
 
+After installation, use `/howl:configure` to customize your statusline display with preset configurations.
+
 #### Via Official Marketplace (Coming Soon)
 
 Once Howl is published to the official Claude Plugin Directory:
@@ -145,7 +147,7 @@ Verify: `~/.claude/hud/howl --version`
 
 ### 🛠️ Method 3: Build from Source
 
-Prerequisites: Go 1.23+, Claude Code CLI
+Prerequisites: Go 1.24+, Claude Code CLI
 
 ```bash
 git clone https://github.com/ai-screams/Howl.git
@@ -254,7 +256,7 @@ howl/
 │   ├── git.go               # Git subprocess calls
 │   ├── usage.go             # OAuth quota API
 │   ├── transcript.go        # JSONL parsing
-│   ├── *_test.go            # Unit tests (78% coverage)
+│   ├── *_test.go            # Unit tests (75.7% coverage)
 │   └── testdata/            # JSONL test fixtures
 ├── docs/                    # Design & research documents
 ├── Makefile                 # Build automation
@@ -280,7 +282,7 @@ howl/
 **Test Environment:**
 
 - Platform: macOS (Apple Silicon)
-- Go: 1.23.4
+- Go: 1.24.13
 - Runs: 20 iterations (minimal), 10 iterations (full)
 
 | Mode                     | Min  | Max     | Average  | Budget      |
@@ -451,7 +453,7 @@ Howl was created to solve specific pain points with existing Claude Code statusl
 
 ## 🗺️ Roadmap
 
-- [ ] Configuration file support (`~/.claude/hud/config.json`)
+- [x] Configuration file support (`~/.claude/hud/config.json`) — _Available in v1.1.0+_
 - [ ] Custom color schemes
 - [ ] Plugin system for custom metrics
 - [ ] Windows support
@@ -466,7 +468,9 @@ This is a personal tool for the AiScream project. Feedback and bug reports welco
 
 ## 📄 License
 
-MIT License — see LICENSE file for details.
+MIT License — see [LICENSE](LICENSE) file for details.
+
+For release history and detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

@@ -73,7 +73,6 @@ var presets = map[string]FeatureToggles{
 	},
 }
 
-// DefaultConfig returns full preset (current behavior).
 // mergeFeatures merges override into base. If override field is true, it overrides base.
 // If override field is false, base value is preserved (no reflection, explicit for all 12 fields).
 func mergeFeatures(base, override FeatureToggles) FeatureToggles {
@@ -156,6 +155,7 @@ func validatePriority(input []string) []string {
 	return result
 }
 
+// DefaultConfig returns the default configuration with full preset enabled.
 func DefaultConfig() Config {
 	return PresetConfig("full")
 }

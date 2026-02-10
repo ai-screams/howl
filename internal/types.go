@@ -2,7 +2,8 @@ package internal
 
 import "strings"
 
-// StdinData is the top-level JSON structure piped by Claude Code every ~300ms.
+// StdinData represents the top-level JSON structure piped by Claude Code every ~300ms.
+// It contains session metrics, context window usage, cost data, and workspace information.
 type StdinData struct {
 	SessionID      string        `json:"session_id"`
 	TranscriptPath string        `json:"transcript_path"`
@@ -18,16 +19,19 @@ type StdinData struct {
 	Agent          *Agent        `json:"agent"`
 }
 
+// Model represents the AI model being used for the session.
 type Model struct {
 	ID          string `json:"id"`
 	DisplayName string `json:"display_name"`
 }
 
+// Workspace represents the working directory context for the session.
 type Workspace struct {
 	CurrentDir string `json:"current_dir"`
 	ProjectDir string `json:"project_dir"`
 }
 
+// Cost represents the cumulative session cost and duration metrics.
 type Cost struct {
 	TotalCostUSD       float64 `json:"total_cost_usd"`
 	TotalDurationMS    int64   `json:"total_duration_ms"`
@@ -36,6 +40,7 @@ type Cost struct {
 	TotalLinesRemoved  int     `json:"total_lines_removed"`
 }
 
+// ContextWindow represents the context window usage and limits for the current session.
 type ContextWindow struct {
 	TotalInputTokens    int           `json:"total_input_tokens"`
 	TotalOutputTokens   int           `json:"total_output_tokens"`
@@ -45,6 +50,7 @@ type ContextWindow struct {
 	CurrentUsage        *CurrentUsage `json:"current_usage"`
 }
 
+// CurrentUsage represents the token breakdown for the current API call.
 type CurrentUsage struct {
 	InputTokens              int `json:"input_tokens"`
 	OutputTokens             int `json:"output_tokens"`
@@ -52,14 +58,17 @@ type CurrentUsage struct {
 	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
 }
 
+// OutputStyle represents the output formatting mode for Claude Code.
 type OutputStyle struct {
 	Name string `json:"name"`
 }
 
+// Vim represents the current vim mode if enabled in Claude Code.
 type Vim struct {
 	Mode string `json:"mode"`
 }
 
+// Agent represents the active agent teammate if in team mode.
 type Agent struct {
 	Name string `json:"name"`
 }

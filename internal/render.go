@@ -7,7 +7,10 @@ import (
 	"time"
 )
 
-// ANSI escape codes
+// ANSI escape codes for terminal color formatting.
+// Reset clears all formatting, bold/dim control intensity,
+// colors follow the standard 3-bit palette (30-37),
+// and extended 8-bit colors use 38;5;N format.
 const (
 	Reset   = "\033[0m"
 	bold    = "\033[1m"
@@ -25,7 +28,7 @@ const (
 	grey    = "\033[38;5;245m"
 )
 
-// render produces lines for the statusline.
+// Render produces lines for the statusline display.
 // Normal mode: 2-4 lines (depending on active features). Danger mode (85%+): 2 dense lines.
 func Render(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo, cfg Config) []string {
 	if m.ContextPercent >= DangerThreshold {

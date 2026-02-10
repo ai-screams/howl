@@ -9,6 +9,8 @@ type Metrics struct {
 	ResponseSpeed   *int // tokens/sec output speed
 }
 
+// ComputeMetrics calculates derived KPIs from raw session data.
+// It computes context percentage, cache efficiency, API wait ratio, cost velocity, and response speed.
 func ComputeMetrics(d *StdinData) Metrics {
 	m := Metrics{
 		ContextPercent: calcContextPercent(d),

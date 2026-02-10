@@ -1,3 +1,5 @@
+// Package main provides the Howl statusline HUD binary for Claude Code.
+// It reads JSON from stdin, computes metrics, and outputs ANSI-formatted statuslines.
 package main
 
 import (

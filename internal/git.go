@@ -5,6 +5,7 @@ import (
 	"os/exec"
 )
 
+// GitInfo represents the current git repository status.
 type GitInfo struct {
 	Branch string
 	Dirty  bool

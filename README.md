@@ -4,13 +4,31 @@
 
 A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claude.com) written in Go. Provides real-time visibility into your AI coding session with intelligent metrics, usage tracking, and adaptive layouts.
 
-[![Language](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go)](https://go.dev)
-[![Size](https://img.shields.io/badge/Binary-5.2MB-blue)]()
-[![Speed](https://img.shields.io/badge/Cold%20Start-~10ms-green)]()
-[![Release](https://img.shields.io/github/v/release/ai-screams/Howl)](https://github.com/ai-screams/Howl/releases)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/Howl/ci.yaml?label=CI)](https://github.com/ai-screams/Howl/actions)
-[![Coverage](https://img.shields.io/badge/Coverage-95.6%25-brightgreen)]()
+[![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev)
+[![Release](https://img.shields.io/github/v/release/ai-screams/Howl?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/releases)
+[![Downloads](https://img.shields.io/github/downloads/ai-screams/Howl/total?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/releases)
+[![Stars](https://img.shields.io/github/stars/ai-screams/Howl?style=social)](https://github.com/ai-screams/Howl)
+[![License](https://img.shields.io/badge/License-MIT-yellow?logo=opensourceinitiative&logoColor=white)](LICENSE)
+[![Last Commit](https://img.shields.io/github/last-commit/ai-screams/Howl?logo=git&logoColor=white)](https://github.com/ai-screams/Howl/commits)
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/ai-screams/Howl?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/graphs/commit-activity)
+
+[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/Howl/ci.yaml?label=CI&logo=githubactions&logoColor=white)](https://github.com/ai-screams/Howl/actions)
+[![Coverage](https://img.shields.io/badge/Coverage-95.6%25-brightgreen?logo=go&logoColor=white)]()
+[![Tests](https://img.shields.io/badge/Tests-113%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
+[![Go Report](https://goreportcard.com/badge/github.com/ai-screams/howl)](https://goreportcard.com/report/github.com/ai-screams/howl)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ai-screams/howl.svg)](https://pkg.go.dev/github.com/ai-screams/howl)
+[![Security](https://img.shields.io/badge/govulncheck-passing-brightgreen?logo=go&logoColor=white)]()
+[![Dependencies](https://img.shields.io/badge/Dependencies-0-brightgreen?logo=go&logoColor=white)]()
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+
+[![Binary Size](https://img.shields.io/badge/Binary-5.2MB-blue?logo=go&logoColor=white)]()
+[![Cold Start](https://img.shields.io/badge/Cold%20Start-~10ms-green?logo=go&logoColor=white)]()
+[![CGO](https://img.shields.io/badge/CGO-disabled-blue?logo=go&logoColor=white)]()
+[![macOS](https://img.shields.io/badge/macOS-amd64%20%7C%20arm64-000000?logo=apple&logoColor=white)](https://github.com/ai-screams/Howl/releases)
+[![Linux](https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-FCC624?logo=linux&logoColor=black)](https://github.com/ai-screams/Howl/releases)
+[![Claude Code](https://img.shields.io/badge/Made%20for-Claude%20Code-blueviolet?logo=anthropic&logoColor=white)](https://code.claude.com)
+[![Stdlib Only](https://img.shields.io/badge/Built%20with-stdlib%20only-00ADD8?logo=go&logoColor=white)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/issues)
 
 ---
 

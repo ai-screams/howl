@@ -29,19 +29,22 @@ const (
 )
 
 // Render produces lines for the statusline display.
-// Normal mode: 2-4 lines (depending on active features). Danger mode (85%+): 2 dense lines.
+// Normal mode: 2-4 lines (depending on active features). Danger mode (configurable, default 85%+): 2 dense lines.
 func Render(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo, cfg Config) []string {
-	if m.ContextPercent >= DangerThreshold {
-		return renderDangerMode(d, m, git, usage, tools)
+	if cfg.Thresholds == (Thresholds{}) {
+		cfg.Thresholds = DefaultThresholds()
+	}
+	if m.ContextPercent >= cfg.Thresholds.ContextDanger {
+		return renderDangerMode(d, m, git, usage, tools, cfg.Thresholds)
 	}
 	return renderNormalMode(d, m, git, usage, tools, account, cfg)
 }
 
-func buildLine1(d *StdinData, m Metrics) []string {
+func buildLine1(d *StdinData, m Metrics, t Thresholds) []string {
 	line1 := make([]string, 0, 5)
 	line1 = append(line1, renderModelBadge(d.Model))
-	line1 = append(line1, renderContextBar(m.ContextPercent, d.ContextWindow))
-	if costStr := renderCost(d.Cost.TotalCostUSD); costStr != "" {
+	line1 = append(line1, renderContextBar(m.ContextPercent, d.ContextWindow, t))
+	if costStr := renderCost(d.Cost.TotalCostUSD, t); costStr != "" {
 		line1 = append(line1, costStr)
 	}
 	line1 = append(line1, renderDuration(d.Cost.TotalDurationMS))
@@ -49,7 +52,8 @@ func buildLine1(d *StdinData, m Metrics) []string {
 }
 
 func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo, cfg Config) []string {
-	line1 := buildLine1(d, m)
+	t := cfg.Thresholds
+	line1 := buildLine1(d, m, t)
 
 	// Line 2: account | git | code changes | speed | quota (with priority support)
 	line2 := buildLine2WithPriority(d, m, cfg, git, account, usage)
@@ -66,13 +70,13 @@ func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, t
 	// Line 4: metrics + vim/agent (conditional)
 	line4 := make([]string, 0, 6)
 	if cfg.Features.CacheEfficiency && m.CacheEfficiency != nil && *m.CacheEfficiency > 0 {
-		line4 = append(line4, renderCacheEfficiencyLabeled(*m.CacheEfficiency))
+		line4 = append(line4, renderCacheEfficiencyLabeled(*m.CacheEfficiency, t))
 	}
 	if cfg.Features.APIWaitRatio && m.APIWaitRatio != nil && *m.APIWaitRatio > 0 {
-		line4 = append(line4, renderAPIRatioLabeled(*m.APIWaitRatio))
+		line4 = append(line4, renderAPIRatioLabeled(*m.APIWaitRatio, t))
 	}
 	if cfg.Features.CostVelocity && m.CostPerMinute != nil {
-		line4 = append(line4, renderCostVelocityLabeled(*m.CostPerMinute))
+		line4 = append(line4, renderCostVelocityLabeled(*m.CostPerMinute, t))
 	}
 	if cfg.Features.VimMode && d.Vim != nil && d.Vim.Mode != "" {
 		line4 = append(line4, renderVimCompact(d.Vim.Mode))
@@ -98,6 +102,7 @@ func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, t
 // Priority metrics are rendered first (in specified order), followed by remaining metrics in default order.
 // Uses added map to prevent duplicate rendering.
 func buildLine2WithPriority(d *StdinData, m Metrics, cfg Config, git *GitInfo, account *AccountInfo, usage *UsageData) []string {
+	t := cfg.Thresholds
 	line2 := make([]string, 0, 7)
 	added := make(map[string]bool, 5)
 
@@ -127,12 +132,12 @@ func buildLine2WithPriority(d *StdinData, m Metrics, cfg Config, git *GitInfo, a
 			}
 		case "response_speed":
 			if cfg.Features.ResponseSpeed && m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
-				line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed))
+				line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed, t))
 				added["response_speed"] = true
 			}
 		case "quota":
 			if cfg.Features.Quota && usage != nil {
-				line2 = append(line2, renderQuota(usage))
+				line2 = append(line2, renderQuota(usage, t))
 				added["quota"] = true
 			}
 		}
@@ -162,11 +167,11 @@ func buildLine2WithPriority(d *StdinData, m Metrics, cfg Config, git *GitInfo, a
 			}
 		case "response_speed":
 			if cfg.Features.ResponseSpeed && m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
-				line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed))
+				line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed, t))
 			}
 		case "quota":
 			if cfg.Features.Quota && usage != nil {
-				line2 = append(line2, renderQuota(usage))
+				line2 = append(line2, renderQuota(usage, t))
 			}
 		}
 	}
@@ -174,8 +179,8 @@ func buildLine2WithPriority(d *StdinData, m Metrics, cfg Config, git *GitInfo, a
 	return line2
 }
 
-func renderDangerMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, _ *ToolInfo) []string {
-	line1 := buildLine1(d, m)
+func renderDangerMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, _ *ToolInfo, t Thresholds) []string {
+	line1 := buildLine1(d, m, t)
 
 	// Line 2: workspace/git | changes | token breakdown | speed | metrics
 	line2 := make([]string, 0, 10)
@@ -201,13 +206,13 @@ func renderDangerMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, _
 
 	// Performance metrics
 	if m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
-		line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed))
+		line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed, t))
 	}
 	if m.CacheEfficiency != nil {
-		line2 = append(line2, renderCacheEfficiencyCompact(*m.CacheEfficiency))
+		line2 = append(line2, renderCacheEfficiencyCompact(*m.CacheEfficiency, t))
 	}
 	if m.APIWaitRatio != nil {
-		line2 = append(line2, renderAPIRatioCompact(*m.APIWaitRatio))
+		line2 = append(line2, renderAPIRatioCompact(*m.APIWaitRatio, t))
 	}
 	if m.CostPerMinute != nil {
 		// Show hourly cost in danger mode
@@ -225,7 +230,7 @@ func renderDangerMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, _
 
 	// Quota at the end of line 2 (danger mode)
 	if usage != nil {
-		line2 = append(line2, renderQuota(usage))
+		line2 = append(line2, renderQuota(usage, t))
 	}
 
 	return []string{joinParts(line1), joinParts(line2)}
@@ -264,7 +269,7 @@ func renderModelBadge(m Model) string {
 	return fmt.Sprintf("%s[%s%s]%s", color, name, suffix, Reset)
 }
 
-func renderContextBar(percent int, cw ContextWindow) string {
+func renderContextBar(percent int, cw ContextWindow, t Thresholds) string {
 	const width = 20
 	filled := width * percent / 100
 	if filled > width {
@@ -282,11 +287,11 @@ func renderContextBar(percent int, cw ContextWindow) string {
 	}
 	bar := b.String()
 
-	color := contextColor(percent)
+	color := contextColor(percent, t)
 	prefix := ""
-	if percent >= DangerThreshold {
+	if percent >= t.ContextDanger {
 		prefix = "🔴 "
-	} else if percent >= 70 {
+	} else if percent >= t.ContextWarning {
 		prefix = "⚠ "
 	}
 
@@ -299,28 +304,28 @@ func renderContextBar(percent int, cw ContextWindow) string {
 		formatTokenCount(usedTokens), formatTokenCount(totalTokens))
 }
 
-func contextColor(p int) string {
+func contextColor(p int, t Thresholds) string {
 	switch {
-	case p >= 85:
+	case p >= t.ContextDanger:
 		return boldRed
-	case p >= 70:
+	case p >= t.ContextWarning:
 		return orange
-	case p >= 50:
+	case p >= t.ContextModerate:
 		return yellow
 	default:
 		return green
 	}
 }
 
-func renderCost(usd float64) string {
+func renderCost(usd float64, t Thresholds) string {
 	if usd < 0.001 {
 		return ""
 	}
 	var color string
 	switch {
-	case usd >= SessionCostHigh:
+	case usd >= t.SessionCostHigh:
 		color = boldRed
-	case usd >= SessionCostMedium:
+	case usd >= t.SessionCostMed:
 		color = yellow
 	default:
 		color = white
@@ -391,50 +396,50 @@ func renderLineChanges(c Cost) string {
 	return fmt.Sprintf("%s+%s%s/%s-%s%s", green, add, Reset, red, del, Reset)
 }
 
-func cacheColor(pct int) string {
+func cacheColor(pct int, t Thresholds) string {
 	switch {
-	case pct >= CacheExcellent:
+	case pct >= t.CacheExcellent:
 		return green
-	case pct >= CacheGood:
+	case pct >= t.CacheGood:
 		return yellow
 	default:
 		return red
 	}
 }
 
-func renderCacheEfficiencyCompact(pct int) string {
-	return fmt.Sprintf("%sC%d%%%s", cacheColor(pct), pct, Reset)
+func renderCacheEfficiencyCompact(pct int, t Thresholds) string {
+	return fmt.Sprintf("%sC%d%%%s", cacheColor(pct, t), pct, Reset)
 }
 
-func renderCacheEfficiencyLabeled(pct int) string {
-	return fmt.Sprintf("%sCache:%s%d%%%s", grey, cacheColor(pct), pct, Reset)
+func renderCacheEfficiencyLabeled(pct int, t Thresholds) string {
+	return fmt.Sprintf("%sCache:%s%d%%%s", grey, cacheColor(pct, t), pct, Reset)
 }
 
-func apiRatioColor(pct int) string {
+func apiRatioColor(pct int, t Thresholds) string {
 	switch {
-	case pct >= WaitHigh:
+	case pct >= t.WaitHigh:
 		return red
-	case pct >= WaitMedium:
+	case pct >= t.WaitMedium:
 		return yellow
 	default:
 		return green
 	}
 }
 
-func renderAPIRatioCompact(pct int) string {
-	return fmt.Sprintf("%sA%d%%%s", apiRatioColor(pct), pct, Reset)
+func renderAPIRatioCompact(pct int, t Thresholds) string {
+	return fmt.Sprintf("%sA%d%%%s", apiRatioColor(pct, t), pct, Reset)
 }
 
-func renderAPIRatioLabeled(pct int) string {
-	return fmt.Sprintf("%sWait:%s%d%%%s", grey, apiRatioColor(pct), pct, Reset)
+func renderAPIRatioLabeled(pct int, t Thresholds) string {
+	return fmt.Sprintf("%sWait:%s%d%%%s", grey, apiRatioColor(pct, t), pct, Reset)
 }
 
-func renderCostVelocityLabeled(perMin float64) string {
+func renderCostVelocityLabeled(perMin float64, t Thresholds) string {
 	var color string
 	switch {
-	case perMin >= CostHigh:
+	case perMin >= t.CostVelocityHigh:
 		color = boldRed
-	case perMin >= CostMedium:
+	case perMin >= t.CostVelocityMed:
 		color = yellow
 	default:
 		color = green
@@ -442,12 +447,12 @@ func renderCostVelocityLabeled(perMin float64) string {
 	return fmt.Sprintf("%sCost:%s$%.2f/m%s", grey, color, perMin, Reset)
 }
 
-func renderResponseSpeed(tokPerSec int) string {
+func renderResponseSpeed(tokPerSec int, t Thresholds) string {
 	var color string
 	switch {
-	case tokPerSec >= SpeedFast:
+	case tokPerSec >= t.SpeedFast:
 		color = green // fast
-	case tokPerSec >= SpeedModerate:
+	case tokPerSec >= t.SpeedModerate:
 		color = yellow // moderate
 	default:
 		color = orange // slow
@@ -560,9 +565,9 @@ func formatTokenCount(tokens int) string {
 }
 
 // renderQuota formats 5h/7d remaining percentage for display.
-func renderQuota(u *UsageData) string {
-	color5 := quotaColor(u.RemainingPercent5h)
-	color7 := quotaColor(u.RemainingPercent7d)
+func renderQuota(u *UsageData, t Thresholds) string {
+	color5 := quotaColor(u.RemainingPercent5h, t)
+	color7 := quotaColor(u.RemainingPercent7d, t)
 
 	now := time.Now()
 	until5h := formatTimeUntil(now, u.ResetsAt5h)
@@ -596,15 +601,15 @@ func formatTimeUntil(now, target time.Time) string {
 	return fmt.Sprintf("%dd%dh", days, remainHours)
 }
 
-func quotaColor(remaining float64) string {
+func quotaColor(remaining float64, t Thresholds) string {
 	switch {
-	case remaining < QuotaCritical:
+	case remaining < t.QuotaCritical:
 		return boldRed
-	case remaining < QuotaLow:
+	case remaining < t.QuotaLow:
 		return red
-	case remaining < QuotaMedium:
+	case remaining < t.QuotaMedium:
 		return orange
-	case remaining < QuotaHigh:
+	case remaining < t.QuotaHigh:
 		return yellow
 	default:
 		return green

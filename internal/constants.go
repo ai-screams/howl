@@ -4,8 +4,9 @@ import "time"
 
 // Context and layout thresholds
 const (
-	DangerThreshold  = 85 // Context percentage to trigger danger mode
-	WarningThreshold = 70 // Show warning indicator
+	DangerThreshold   = 85 // Context percentage to trigger danger mode
+	WarningThreshold  = 70 // Show warning indicator
+	ModerateThreshold = 50 // Context % for yellow (moderate usage)
 )
 
 // Cache efficiency thresholds (percentage)

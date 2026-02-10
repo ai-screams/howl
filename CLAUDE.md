@@ -45,9 +45,9 @@ All business logic lives in `internal/` with no sub-packages. The dependency gra
 
 - **types.go** — `StdinData` struct matching Claude Code's JSON schema, `ModelTier` classification
 - **metrics.go** — `Metrics` struct + `ComputeMetrics()`: context%, cache efficiency, API wait ratio, cost/min, tokens/sec
-- **constants.go** — All threshold values (danger 85%, cache 80/50%, speed 60/30 tok/s, cost $0.50/$0.10/min, quota 10/25/50/75%)
+- **constants.go** — Default threshold values (danger 85%, warning 70%, moderate 50%, cache 80/50%, speed 60/30 tok/s, cost $0.50/$0.10/min, quota 10/25/50/75%). All configurable via `config.go` Thresholds
 - **config.go** — `Config` + `FeatureToggles` + 4 presets (full/minimal/developer/cost-focused). `LoadConfig()` reads `~/.claude/hud/config.json` with 4KB size guard. Features merge via `mergeFeatures(base, override)` — override can only enable, not disable
-- **render.go** — `Render()` dispatches to `renderNormalMode` (2-4 lines) or `renderDangerMode` (2 dense lines) at 85%+ context. Line 2 supports priority ordering (max 5 metrics)
+- **render.go** — `Render()` dispatches to `renderNormalMode` (2-4 lines) or `renderDangerMode` (2 dense lines) at configurable context threshold (default 85%). Line 2 supports priority ordering (max 5 metrics)
 - **git.go** — `GetGitInfo()`: branch + dirty via subprocess with 1s timeout
 - **usage.go** — `GetUsage()`: OAuth quota from `api.anthropic.com/api/oauth/usage`, 60s session-scoped cache in `/tmp/howl-{sessionID}/`. Token from macOS Keychain via `/usr/bin/security`
 - **transcript.go** — `ParseTranscript()`: tail-reads last 64KB/100 lines of JSONL, extracts top-5 tools + running agents

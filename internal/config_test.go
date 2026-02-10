@@ -384,3 +384,263 @@ func TestLoadConfig_PriorityWithInvalid(t *testing.T) {
 		}
 	}
 }
+
+// --- v1.5 Tests: Thresholds ---
+
+func TestDefaultThresholds(t *testing.T) {
+	th := DefaultThresholds()
+
+	// Verify all 16 fields match constants
+	if th.ContextDanger != DangerThreshold {
+		t.Errorf("ContextDanger: expected %d, got %d", DangerThreshold, th.ContextDanger)
+	}
+	if th.ContextWarning != WarningThreshold {
+		t.Errorf("ContextWarning: expected %d, got %d", WarningThreshold, th.ContextWarning)
+	}
+	if th.ContextModerate != ModerateThreshold {
+		t.Errorf("ContextModerate: expected %d, got %d", ModerateThreshold, th.ContextModerate)
+	}
+	if th.SessionCostHigh != SessionCostHigh {
+		t.Errorf("SessionCostHigh: expected %.2f, got %.2f", SessionCostHigh, th.SessionCostHigh)
+	}
+	if th.SessionCostMed != SessionCostMedium {
+		t.Errorf("SessionCostMed: expected %.2f, got %.2f", SessionCostMedium, th.SessionCostMed)
+	}
+	if th.CacheExcellent != CacheExcellent {
+		t.Errorf("CacheExcellent: expected %d, got %d", CacheExcellent, th.CacheExcellent)
+	}
+	if th.CacheGood != CacheGood {
+		t.Errorf("CacheGood: expected %d, got %d", CacheGood, th.CacheGood)
+	}
+	if th.WaitHigh != WaitHigh {
+		t.Errorf("WaitHigh: expected %d, got %d", WaitHigh, th.WaitHigh)
+	}
+	if th.WaitMedium != WaitMedium {
+		t.Errorf("WaitMedium: expected %d, got %d", WaitMedium, th.WaitMedium)
+	}
+	if th.SpeedFast != SpeedFast {
+		t.Errorf("SpeedFast: expected %d, got %d", SpeedFast, th.SpeedFast)
+	}
+	if th.SpeedModerate != SpeedModerate {
+		t.Errorf("SpeedModerate: expected %d, got %d", SpeedModerate, th.SpeedModerate)
+	}
+	if th.CostVelocityHigh != CostHigh {
+		t.Errorf("CostVelocityHigh: expected %.2f, got %.2f", CostHigh, th.CostVelocityHigh)
+	}
+	if th.CostVelocityMed != CostMedium {
+		t.Errorf("CostVelocityMed: expected %.2f, got %.2f", CostMedium, th.CostVelocityMed)
+	}
+	if th.QuotaCritical != QuotaCritical {
+		t.Errorf("QuotaCritical: expected %.1f, got %.1f", float64(QuotaCritical), th.QuotaCritical)
+	}
+	if th.QuotaLow != QuotaLow {
+		t.Errorf("QuotaLow: expected %.1f, got %.1f", float64(QuotaLow), th.QuotaLow)
+	}
+	if th.QuotaMedium != QuotaMedium {
+		t.Errorf("QuotaMedium: expected %.1f, got %.1f", float64(QuotaMedium), th.QuotaMedium)
+	}
+	if th.QuotaHigh != QuotaHigh {
+		t.Errorf("QuotaHigh: expected %.1f, got %.1f", float64(QuotaHigh), th.QuotaHigh)
+	}
+}
+
+func TestMergeThresholds_AllZero(t *testing.T) {
+	base := DefaultThresholds()
+	override := Thresholds{} // all zero
+
+	result := mergeThresholds(base, override)
+
+	// All fields should remain at default
+	if result.ContextDanger != DangerThreshold {
+		t.Errorf("ContextDanger should be preserved: expected %d, got %d", DangerThreshold, result.ContextDanger)
+	}
+	if result.SpeedFast != SpeedFast {
+		t.Errorf("SpeedFast should be preserved: expected %d, got %d", SpeedFast, result.SpeedFast)
+	}
+	if result.QuotaCritical != QuotaCritical {
+		t.Errorf("QuotaCritical should be preserved: expected %.1f, got %.1f", float64(QuotaCritical), result.QuotaCritical)
+	}
+}
+
+func TestMergeThresholds_PartialOverride(t *testing.T) {
+	base := DefaultThresholds()
+	override := Thresholds{
+		ContextDanger:   90,
+		SpeedFast:       100,
+		SessionCostHigh: 10.0,
+		CostVelocityMed: 0.25,
+		QuotaCritical:   15.0,
+	}
+
+	result := mergeThresholds(base, override)
+
+	// Overridden int fields
+	if result.ContextDanger != 90 {
+		t.Errorf("ContextDanger should be overridden: expected 90, got %d", result.ContextDanger)
+	}
+	if result.SpeedFast != 100 {
+		t.Errorf("SpeedFast should be overridden: expected 100, got %d", result.SpeedFast)
+	}
+
+	// Overridden float64 fields
+	if result.SessionCostHigh != 10.0 {
+		t.Errorf("SessionCostHigh should be overridden: expected 10.0, got %.2f", result.SessionCostHigh)
+	}
+	if result.CostVelocityMed != 0.25 {
+		t.Errorf("CostVelocityMed should be overridden: expected 0.25, got %.2f", result.CostVelocityMed)
+	}
+	if result.QuotaCritical != 15.0 {
+		t.Errorf("QuotaCritical should be overridden: expected 15.0, got %.1f", result.QuotaCritical)
+	}
+
+	// Preserved defaults
+	if result.ContextWarning != WarningThreshold {
+		t.Errorf("ContextWarning should remain default: expected %d, got %d", WarningThreshold, result.ContextWarning)
+	}
+	if result.CacheExcellent != CacheExcellent {
+		t.Errorf("CacheExcellent should remain default: expected %d, got %d", CacheExcellent, result.CacheExcellent)
+	}
+	if result.QuotaLow != QuotaLow {
+		t.Errorf("QuotaLow should remain default: expected %.1f, got %.1f", float64(QuotaLow), result.QuotaLow)
+	}
+}
+
+func TestMergeThresholds_NegativeIgnored(t *testing.T) {
+	base := DefaultThresholds()
+	override := Thresholds{
+		ContextDanger: -1,
+		CacheGood:     -50,
+		QuotaCritical: -10.0,
+	}
+
+	result := mergeThresholds(base, override)
+
+	// Negative values should be ignored, base preserved
+	if result.ContextDanger != DangerThreshold {
+		t.Errorf("negative ContextDanger should be ignored: expected %d, got %d", DangerThreshold, result.ContextDanger)
+	}
+	if result.CacheGood != CacheGood {
+		t.Errorf("negative CacheGood should be ignored: expected %d, got %d", CacheGood, result.CacheGood)
+	}
+	if result.QuotaCritical != QuotaCritical {
+		t.Errorf("negative QuotaCritical should be ignored: expected %.1f, got %.1f", float64(QuotaCritical), result.QuotaCritical)
+	}
+}
+
+func TestLoadConfig_WithThresholds(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	configDir := filepath.Join(tmpDir, ".claude", "hud")
+	os.MkdirAll(configDir, 0755)
+	configPath := filepath.Join(configDir, "config.json")
+
+	// Write config with custom thresholds
+	content := `{"preset":"full","thresholds":{"context_danger":90,"speed_fast":100}}`
+	os.WriteFile(configPath, []byte(content), 0644)
+
+	cfg := LoadConfig()
+
+	// Verify overridden values
+	if cfg.Thresholds.ContextDanger != 90 {
+		t.Errorf("ContextDanger should be 90, got %d", cfg.Thresholds.ContextDanger)
+	}
+	if cfg.Thresholds.SpeedFast != 100 {
+		t.Errorf("SpeedFast should be 100, got %d", cfg.Thresholds.SpeedFast)
+	}
+
+	// Verify default values preserved
+	if cfg.Thresholds.ContextWarning != WarningThreshold {
+		t.Errorf("ContextWarning should remain default %d, got %d", WarningThreshold, cfg.Thresholds.ContextWarning)
+	}
+	if cfg.Thresholds.CacheExcellent != CacheExcellent {
+		t.Errorf("CacheExcellent should remain default %d, got %d", CacheExcellent, cfg.Thresholds.CacheExcellent)
+	}
+	if cfg.Thresholds.QuotaLow != QuotaLow {
+		t.Errorf("QuotaLow should remain default %.1f, got %.1f", float64(QuotaLow), cfg.Thresholds.QuotaLow)
+	}
+}
+
+func TestValidateThresholds_InvertedContext(t *testing.T) {
+	th := Thresholds{
+		ContextDanger:   50,
+		ContextWarning:  90,
+		ContextModerate: 95,
+	}
+	validateThresholds(&th)
+
+	if th.ContextWarning >= th.ContextDanger {
+		t.Errorf("warning (%d) should be < danger (%d)", th.ContextWarning, th.ContextDanger)
+	}
+	if th.ContextModerate >= th.ContextWarning {
+		t.Errorf("moderate (%d) should be < warning (%d)", th.ContextModerate, th.ContextWarning)
+	}
+}
+
+func TestValidateThresholds_InvertedCost(t *testing.T) {
+	th := Thresholds{
+		SessionCostHigh:  1.0,
+		SessionCostMed:   5.0,
+		CostVelocityHigh: 0.10,
+		CostVelocityMed:  0.50,
+	}
+	validateThresholds(&th)
+
+	if th.SessionCostMed >= th.SessionCostHigh {
+		t.Errorf("session cost med (%.2f) should be < high (%.2f)", th.SessionCostMed, th.SessionCostHigh)
+	}
+	if th.CostVelocityMed >= th.CostVelocityHigh {
+		t.Errorf("cost velocity med (%.2f) should be < high (%.2f)", th.CostVelocityMed, th.CostVelocityHigh)
+	}
+}
+
+func TestValidateThresholds_InvertedQuota(t *testing.T) {
+	// Quota ordering: critical < low < medium < high
+	th := Thresholds{
+		QuotaCritical: 80,
+		QuotaLow:      60,
+		QuotaMedium:   40,
+		QuotaHigh:     20,
+	}
+	validateThresholds(&th)
+
+	if th.QuotaLow <= th.QuotaCritical {
+		t.Errorf("quota low (%.1f) should be > critical (%.1f)", th.QuotaLow, th.QuotaCritical)
+	}
+	if th.QuotaMedium <= th.QuotaLow {
+		t.Errorf("quota medium (%.1f) should be > low (%.1f)", th.QuotaMedium, th.QuotaLow)
+	}
+	if th.QuotaHigh <= th.QuotaMedium {
+		t.Errorf("quota high (%.1f) should be > medium (%.1f)", th.QuotaHigh, th.QuotaMedium)
+	}
+}
+
+func TestValidateThresholds_ValidUnchanged(t *testing.T) {
+	th := DefaultThresholds()
+	original := th
+	validateThresholds(&th)
+
+	if th != original {
+		t.Errorf("valid defaults should not be modified by validateThresholds")
+	}
+}
+
+func TestLoadConfig_InvertedThresholdsCorrected(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
+
+	configDir := filepath.Join(tmpDir, ".claude", "hud")
+	os.MkdirAll(configDir, 0755)
+	configPath := filepath.Join(configDir, "config.json")
+
+	// Intentionally inverted: warning > danger
+	content := `{"preset":"full","thresholds":{"context_danger":50,"context_warning":90}}`
+	os.WriteFile(configPath, []byte(content), 0644)
+
+	cfg := LoadConfig()
+
+	if cfg.Thresholds.ContextWarning >= cfg.Thresholds.ContextDanger {
+		t.Errorf("LoadConfig should fix inverted thresholds: warning=%d >= danger=%d",
+			cfg.Thresholds.ContextWarning, cfg.Thresholds.ContextDanger)
+	}
+}

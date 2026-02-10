@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// UsageData represents the OAuth API usage quota with 5-hour and 7-day limits.
 type UsageData struct {
 	RemainingPercent5h float64   `json:"remaining_percent_5h"`
 	RemainingPercent7d float64   `json:"remaining_percent_7d"`
@@ -36,7 +37,7 @@ const (
 	apiTimeout  = UsageAPITimeout
 )
 
-// getUsage fetches OAuth usage data with session-scoped caching.
+// GetUsage fetches OAuth usage data with session-scoped caching.
 // Returns nil on any failure — usage quota is optional.
 func GetUsage(sessionID string) *UsageData {
 	if sessionID == "" {

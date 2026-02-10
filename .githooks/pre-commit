@@ -28,16 +28,24 @@ if ! "$PRETTIER" -c -u "**/*.md" "**/*.yaml" "**/*.yml" 2>&1; then
     exit 1
 fi
 
-# Lint
+# go mod tidy check
+go mod tidy
+if [ -n "$(git status --porcelain go.mod go.sum 2>/dev/null)" ]; then
+    echo "pre-commit: go.mod needs tidy. Run 'go mod tidy' and commit the changes."
+    git checkout go.mod go.sum 2>/dev/null # Restore if changed
+    exit 1
+fi
+
+# Lint (includes go vet)
 if ! "$GOLANGCI_LINT" run --timeout=3m ./... 2>&1; then
     echo "pre-commit: lint issues found. Fix them before committing."
     exit 1
 fi
 
-# Tests
-if ! go test ./... > /dev/null 2>&1; then
-    echo "pre-commit: tests failed."
-    exit 1
-fi
+# Tests (disabled - run in CI only)
+# if ! go test ./... > /dev/null 2>&1; then
+#     echo "pre-commit: tests failed."
+#     exit 1
+# fi
 
 echo "pre-commit: all checks passed."

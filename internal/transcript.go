@@ -9,12 +9,14 @@ import (
 	"strings"
 )
 
+// TranscriptEntry represents a single line in the Claude Code transcript JSONL file.
 type TranscriptEntry struct {
 	Message struct {
 		Content []ContentBlock `json:"content"`
 	} `json:"message"`
 }
 
+// ContentBlock represents a single content block within a transcript message.
 type ContentBlock struct {
 	Type      string                 `json:"type"`
 	ID        string                 `json:"id"`
@@ -24,12 +26,13 @@ type ContentBlock struct {
 	IsError   bool                   `json:"is_error"`
 }
 
+// ToolInfo represents the aggregated tool usage and running agents from the transcript.
 type ToolInfo struct {
 	Tools  map[string]int // tool name -> count
 	Agents []string       // running agent names
 }
 
-// parseTranscript reads the last N lines of transcript to extract recent tools and agents.
+// ParseTranscript reads the last N lines of transcript to extract recent tools and agents.
 // Returns nil on any error (transcript parsing is optional).
 func ParseTranscript(path string) *ToolInfo {
 	if path == "" {

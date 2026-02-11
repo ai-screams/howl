@@ -42,13 +42,13 @@ _Real-time statusline HUD showing 1M context session with 13 intelligent metrics
 
 - [Features](#features)
 - [Installation](#installation)
+- [Uninstallation](#uninstallation)
 - [Usage](#usage)
 - [Architecture](#architecture)
 - [Performance](#performance)
 - [Development](#development)
 - [Configuration](#configuration)
   - [Custom Thresholds](#custom-thresholds)
-- [Uninstallation](#uninstallation)
 - [Troubleshooting](#troubleshooting)
 - [Why Howl?](#why-howl)
 - [Roadmap](#roadmap)
@@ -191,6 +191,33 @@ The Makefile automatically configures your settings.json.
 ### Post-Installation ✅
 
 Restart Claude Code to activate the statusline. The HUD will appear at the bottom of your terminal.
+
+---
+
+<a name="uninstallation"></a>
+
+## Uninstallation 🗑️
+
+### If installed via Plugin
+
+```bash
+/plugin uninstall howl@ai-screams-howl
+```
+
+This removes the plugin but keeps the binary. To remove everything:
+
+```bash
+/plugin uninstall howl@ai-screams-howl
+rm ~/.claude/hud/howl
+```
+
+Then remove the `statusLine` field from `~/.claude/settings.json`.
+
+### If installed manually
+
+1. Remove binary: `rm ~/.claude/hud/howl`
+2. Remove `statusLine` field from `~/.claude/settings.json`
+3. Restart Claude Code
 
 ---
 
@@ -454,33 +481,6 @@ No manual configuration needed if Claude Code is authenticated.
 
 - **Usage quota cache:** `$TMPDIR/howl-{session_id}/usage.json` (60s TTL)
 - **Session-scoped:** Each Claude Code session has isolated cache via `session_id`
-
----
-
-<a name="uninstallation"></a>
-
-## Uninstallation 🗑️
-
-### If installed via Plugin
-
-```bash
-/plugin uninstall howl@ai-screams-howl
-```
-
-This removes the plugin but keeps the binary. To remove everything:
-
-```bash
-/plugin uninstall howl@ai-screams-howl
-rm ~/.claude/hud/howl
-```
-
-Then remove the `statusLine` field from `~/.claude/settings.json`.
-
-### If installed manually
-
-1. Remove binary: `rm ~/.claude/hud/howl`
-2. Remove `statusLine` field from `~/.claude/settings.json`
-3. Restart Claude Code
 
 ---
 

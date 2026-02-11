@@ -97,6 +97,8 @@ _Real-time statusline HUD showing 1M context session with 13 intelligent metrics
 
 ---
 
+<a name="installation"></a>
+
 ## Installation 💾
 
 Choose your preferred installation method:
@@ -400,6 +402,8 @@ func renderNewMetric(val int) string {
 
 ---
 
+<a name="configuration"></a>
+
 ## Configuration ⚙️
 
 ### Custom Thresholds
@@ -453,6 +457,8 @@ No manual configuration needed if Claude Code is authenticated.
 
 ---
 
+<a name="uninstallation"></a>
+
 ## Uninstallation 🗑️
 
 ### If installed via Plugin
@@ -477,6 +483,8 @@ Then remove the `statusLine` field from `~/.claude/settings.json`.
 3. Restart Claude Code
 
 ---
+
+<a name="troubleshooting"></a>
 
 ## Troubleshooting 🔍
 
@@ -532,6 +540,8 @@ Howl was created to solve specific pain points with existing Claude Code statusl
 
 ---
 
+<a name="roadmap"></a>
+
 ## Roadmap 🗺️
 
 - [x] Configuration file support (`~/.claude/hud/config.json`) — _Available in v1.3.0+_
@@ -543,11 +553,15 @@ Howl was created to solve specific pain points with existing Claude Code statusl
 
 ---
 
+<a name="contributing"></a>
+
 ## Contributing 🤝
 
 This is a personal tool for the AiScream project. Feedback and bug reports welcome!
 
 ---
+
+<a name="license"></a>
 
 ## License 📄
 
@@ -556,6 +570,8 @@ MIT License — see [LICENSE](LICENSE) file for details.
 For release history and detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
+
+<a name="credits"></a>
 
 ## Credits 💝
 

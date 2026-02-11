@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-REPO="ai-screams/Howl"
+REPO="ai-screams/howl"
 INSTALL_DIR="$HOME/.claude/hud"
 BINARY="howl"
 SETTINGS="$HOME/.claude/settings.json"

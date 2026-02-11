@@ -20,7 +20,7 @@ Reference: [GitHub Docs](https://docs.github.com/en/actions/security-for-github-
 
 - Go to: https://github.com/organizations/ai-screams/settings/apps/new
 - **GitHub App name:** `howl-release-automation`
-- **Homepage URL:** `https://github.com/ai-screams/Howl`
+- **Homepage URL:** `https://github.com/ai-screams/howl`
 - **Webhook:** Uncheck "Active" (not needed)
 - **Repository permissions:**
   - Contents: **Read and write**
@@ -45,7 +45,7 @@ After app creation:
 
 ### 4. Add Repository Secrets
 
-Go to: https://github.com/ai-screams/Howl/settings/secrets/actions
+Go to: https://github.com/ai-screams/howl/settings/secrets/actions
 
 **Secret 1: APP_ID**
 - Click "New repository secret"

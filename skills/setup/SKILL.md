@@ -49,7 +49,7 @@ If the install fails:
 
 - Check internet connectivity (needs access to github.com)
 - Verify `curl` is available
-- Try manual download from: https://github.com/ai-screams/Howl/releases/latest
+- Try manual download from: https://github.com/ai-screams/howl/releases/latest
 - Supported platforms: macOS (arm64/amd64), Linux (arm64/amd64)
 
 If the statusline does not appear after restart:

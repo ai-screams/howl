@@ -77,7 +77,7 @@ release:
   footer: |
     ---
 
-    **Full Changelog**: https://github.com/ai-screams/Howl/compare/{{.PreviousTag}}...{{.Tag}}
+    **Full Changelog**: https://github.com/ai-screams/howl/compare/{{.PreviousTag}}...{{.Tag}}
 
     ## Installation
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Howl** — a Go statusline HUD for Claude Code. Reads JSON from stdin (piped every ~300ms), computes 13 metrics, and outputs ANSI-formatted lines. Zero external dependencies (stdlib only), CGO_ENABLED=0, ~10ms cold start.
 
-Module: `github.com/ai-screams/howl` (lowercase; GitHub repo is `ai-screams/Howl`)
+Module: `github.com/ai-screams/howl`
 
 ## Commands
 

@@ -5,8 +5,8 @@
   "author": {
     "name": "AiScream"
   },
-  "homepage": "https://github.com/ai-screams/Howl",
-  "repository": "https://github.com/ai-screams/Howl",
+  "homepage": "https://github.com/ai-screams/howl",
+  "repository": "https://github.com/ai-screams/howl",
   "license": "MIT",
   "keywords": [
     "statusline",

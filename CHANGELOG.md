@@ -132,11 +132,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Extract magic numbers to constants
 - Remove deprecated and unused render functions
 
-[Unreleased]: https://github.com/ai-screams/Howl/compare/v1.6.0...HEAD
-[1.6.0]: https://github.com/ai-screams/Howl/compare/v1.5.0...v1.6.0
-[1.5.0]: https://github.com/ai-screams/Howl/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/ai-screams/Howl/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/ai-screams/Howl/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/ai-screams/Howl/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/ai-screams/Howl/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/ai-screams/Howl/releases/tag/v1.0.0
+[Unreleased]: https://github.com/ai-screams/howl/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/ai-screams/howl/compare/v1.5.0...v1.6.0
+[1.5.0]: https://github.com/ai-screams/howl/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/ai-screams/howl/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/ai-screams/howl/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/ai-screams/howl/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/ai-screams/howl/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/ai-screams/howl/releases/tag/v1.0.0

@@ -17,7 +17,7 @@ Only the latest release is supported. Please upgrade before reporting security i
 
 ### 1. GitHub Security Advisory (Recommended)
 
-> [Report a vulnerability](https://github.com/ai-screams/Howl/security/advisories/new)
+> [Report a vulnerability](https://github.com/ai-screams/howl/security/advisories/new)
 
 This allows coordinated disclosure with automatic CVE assignment.
 
@@ -141,7 +141,7 @@ We will not disclose your identity without permission.
 
 ## Security Best Practices for Users
 
-- Download binaries only from [official GitHub Releases](https://github.com/ai-screams/Howl/releases)
+- Download binaries only from [official GitHub Releases](https://github.com/ai-screams/howl/releases)
 - Verify SHA256 checksums before installation
 - Review `scripts/install.sh` before running
 - Keep Howl updated to the latest version

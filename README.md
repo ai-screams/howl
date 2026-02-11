@@ -5,14 +5,14 @@
 A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claude.com) written in Go. Provides real-time visibility into your AI coding session with intelligent metrics, usage tracking, and adaptive layouts.
 
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev)
-[![Release](https://img.shields.io/github/v/release/ai-screams/Howl?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/releases)
-[![Downloads](https://img.shields.io/github/downloads/ai-screams/Howl/total?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/releases)
-[![Stars](https://img.shields.io/github/stars/ai-screams/Howl?style=social)](https://github.com/ai-screams/Howl)
+[![Release](https://img.shields.io/github/v/release/ai-screams/howl?logo=github&logoColor=white)](https://github.com/ai-screams/howl/releases)
+[![Downloads](https://img.shields.io/github/downloads/ai-screams/howl/total?logo=github&logoColor=white)](https://github.com/ai-screams/howl/releases)
+[![Stars](https://img.shields.io/github/stars/ai-screams/howl?style=social)](https://github.com/ai-screams/howl)
 [![License](https://img.shields.io/badge/License-MIT-yellow?logo=opensourceinitiative&logoColor=white)](LICENSE)
-[![Last Commit](https://img.shields.io/github/last-commit/ai-screams/Howl?logo=git&logoColor=white)](https://github.com/ai-screams/Howl/commits)
-[![Commit Activity](https://img.shields.io/github/commit-activity/m/ai-screams/Howl?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/graphs/commit-activity)
+[![Last Commit](https://img.shields.io/github/last-commit/ai-screams/howl?logo=git&logoColor=white)](https://github.com/ai-screams/howl/commits)
+[![Commit Activity](https://img.shields.io/github/commit-activity/m/ai-screams/howl?logo=github&logoColor=white)](https://github.com/ai-screams/howl/graphs/commit-activity)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/Howl/ci.yaml?label=CI&logo=githubactions&logoColor=white)](https://github.com/ai-screams/Howl/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/howl/ci.yaml?label=CI&logo=githubactions&logoColor=white)](https://github.com/ai-screams/howl/actions)
 [![Coverage](https://img.shields.io/badge/Coverage-96.1%25-brightgreen?logo=go&logoColor=white)]()
 [![Tests](https://img.shields.io/badge/Tests-139%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
 [![Go Report](https://goreportcard.com/badge/github.com/ai-screams/howl)](https://goreportcard.com/report/github.com/ai-screams/howl)
@@ -24,11 +24,11 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 [![Binary Size](https://img.shields.io/badge/Binary-5.6MB-blue?logo=go&logoColor=white)]()
 [![Cold Start](https://img.shields.io/badge/Cold%20Start-~10ms-green?logo=go&logoColor=white)]()
 [![CGO](https://img.shields.io/badge/CGO-disabled-blue?logo=go&logoColor=white)]()
-[![macOS](https://img.shields.io/badge/macOS-amd64%20%7C%20arm64-000000?logo=apple&logoColor=white)](https://github.com/ai-screams/Howl/releases)
-[![Linux](https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-FCC624?logo=linux&logoColor=black)](https://github.com/ai-screams/Howl/releases)
+[![macOS](https://img.shields.io/badge/macOS-amd64%20%7C%20arm64-000000?logo=apple&logoColor=white)](https://github.com/ai-screams/howl/releases)
+[![Linux](https://img.shields.io/badge/Linux-amd64%20%7C%20arm64-FCC624?logo=linux&logoColor=black)](https://github.com/ai-screams/howl/releases)
 [![Claude Code](https://img.shields.io/badge/Made%20for-Claude%20Code-blueviolet?logo=anthropic&logoColor=white)](https://code.claude.com)
 [![Stdlib Only](https://img.shields.io/badge/Built%20with-stdlib%20only-00ADD8?logo=go&logoColor=white)]()
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?logo=github&logoColor=white)](https://github.com/ai-screams/Howl/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?logo=github&logoColor=white)](https://github.com/ai-screams/howl/issues)
 
 ---
 
@@ -108,7 +108,7 @@ Choose your preferred installation method:
 #### Via Self-hosted Marketplace
 
 ```bash
-/plugin marketplace add ai-screams/Howl
+/plugin marketplace add ai-screams/howl
 /plugin install howl@ai-screams-Howl
 /howl:setup
 ```
@@ -136,22 +136,22 @@ Or search for "howl" in `/plugin > Discover`.
 
 ### 📦 Method 2: Direct Binary Download
 
-Download the latest binary from [GitHub Releases](https://github.com/ai-screams/Howl/releases/latest):
+Download the latest binary from [GitHub Releases](https://github.com/ai-screams/howl/releases/latest):
 
 ```bash
 mkdir -p ~/.claude/hud
 
 # macOS (Apple Silicon)
-curl -fsSL https://github.com/ai-screams/Howl/releases/latest/download/howl_darwin_arm64 -o ~/.claude/hud/howl
+curl -fsSL https://github.com/ai-screams/howl/releases/latest/download/howl_darwin_arm64 -o ~/.claude/hud/howl
 
 # macOS (Intel)
-curl -fsSL https://github.com/ai-screams/Howl/releases/latest/download/howl_darwin_amd64 -o ~/.claude/hud/howl
+curl -fsSL https://github.com/ai-screams/howl/releases/latest/download/howl_darwin_amd64 -o ~/.claude/hud/howl
 
 # Linux (x86_64)
-curl -fsSL https://github.com/ai-screams/Howl/releases/latest/download/howl_linux_amd64 -o ~/.claude/hud/howl
+curl -fsSL https://github.com/ai-screams/howl/releases/latest/download/howl_linux_amd64 -o ~/.claude/hud/howl
 
 # Linux (ARM64)
-curl -fsSL https://github.com/ai-screams/Howl/releases/latest/download/howl_linux_arm64 -o ~/.claude/hud/howl
+curl -fsSL https://github.com/ai-screams/howl/releases/latest/download/howl_linux_arm64 -o ~/.claude/hud/howl
 
 chmod +x ~/.claude/hud/howl
 ```
@@ -176,7 +176,7 @@ Verify: `~/.claude/hud/howl --version`
 Prerequisites: Go 1.24+, Claude Code CLI
 
 ```bash
-git clone https://github.com/ai-screams/Howl.git
+git clone https://github.com/ai-screams/howl.git
 cd Howl
 make install
 # Binary installed to ~/.claude/hud/howl
@@ -559,7 +559,7 @@ For release history and detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## 💝 Credits
 
-**Project:** [ai-screams/Howl](https://github.com/ai-screams/Howl)<br>
+**Project:** [ai-screams/howl](https://github.com/ai-screams/howl)<br>
 **Author:** pignuante<br>
 **Inspired by:** [claude-hud](https://github.com/jarrodwatts/claude-hud) by Jarrod Watts
 

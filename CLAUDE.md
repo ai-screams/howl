@@ -71,7 +71,7 @@ All business logic lives in `internal/` with no sub-packages. The dependency gra
 - `docs:`, `chore:`, `test:`, `ci:`, `style:`, `refactor:` → no version bump
 - `chore(deps):` → no bump (Dependabot prefix)
 
-The auto-release pipeline: push to main → svu calculates next version → syncs `.claude-plugin/plugin.json` version → creates git tag → GoReleaser builds 4 binaries.
+The auto-release pipeline: PR merge to main → svu calculates next version → syncs `.claude-plugin/plugin.json` version → creates git tag → dispatches Release workflow → GoReleaser builds 4 binaries. Direct pushes to main (docs, ci, chore) do **not** trigger version bumps.
 
 ## Pre-commit Hooks
 

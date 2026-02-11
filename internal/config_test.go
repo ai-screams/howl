@@ -102,8 +102,8 @@ func TestLoadConfig_ValidPresets(t *testing.T) {
 	}{
 		{"full", true, true, true, true, true},
 		{"minimal", false, false, false, false, false},
-		{"developer", true, true, false, false, false},
-		{"cost-focused", false, false, false, true, true},
+		{"developer", true, true, true, true, false},
+		{"cost-focused", true, false, false, true, true},
 	}
 
 	for _, tt := range tests {

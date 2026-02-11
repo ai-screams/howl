@@ -311,10 +311,10 @@ func TestIntegration_NormalMode(t *testing.T) {
 			name:         "vim_and_agent_full_config",
 			json:         jsonVimAndAgent,
 			cfg:          PresetConfig("full"),
-			wantMinLines: 2,
+			wantMinLines: 1,
 			wantMaxLines: 4,
 			wantLineContains: map[int][]string{
-				2: {"N", "@my-agent"}, // Line 3 (index 2) has vim and agent
+				1: {"N", "@my-agent"}, // Line 2 (index 1) has vim and agent (no L2 bars without usage)
 			},
 			wantContains: []string{"claude-sonnet-4.5", "27%"},
 		},
@@ -859,7 +859,8 @@ func TestIntegration_CustomThresholds(t *testing.T) {
 	customCfg.Thresholds.ContextWarning = 80
 
 	git := &GitInfo{Branch: "main", Dirty: true}
-	normalLines := Render(&d, m, git, nil, nil, nil, customCfg)
+	usage := &UsageData{RemainingPercent5h: 60.0, RemainingPercent7d: 80.0}
+	normalLines := Render(&d, m, git, usage, nil, nil, customCfg)
 
 	if len(normalLines) <= 2 {
 		t.Errorf("custom danger=90 at 85%% should produce normal mode (>2 lines), got %d lines", len(normalLines))

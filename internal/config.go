@@ -86,13 +86,18 @@ var presets = map[string]FeatureToggles{
 		Git:             true,
 		LineChanges:     true,
 		ResponseSpeed:   true,
+		Quota:           true,
+		Tools:           true,
+		Agents:          true,
 		CacheEfficiency: true,
 		VimMode:         true,
 	},
 	"cost-focused": {
-		Quota:        true,
-		APIWaitRatio: true,
-		CostVelocity: true,
+		Account:       true,
+		ResponseSpeed: true,
+		Quota:         true,
+		APIWaitRatio:  true,
+		CostVelocity:  true,
 	},
 }
 

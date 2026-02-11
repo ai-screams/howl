@@ -40,10 +40,21 @@ func Render(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *Tool
 	return renderNormalMode(d, m, git, usage, tools, account, cfg)
 }
 
-func buildLine1(d *StdinData, m Metrics, cfg Config, git *GitInfo, account *AccountInfo) []string {
+func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo, cfg Config) []string {
 	t := cfg.Thresholds
-	line1 := make([]string, 0, 7)
-	line1 = append(line1, renderModelBadge(d.Model, d.ContextWindow.ContextWindowSize))
+
+	// Determine if quota bars will be shown
+	hasQuotaBars := cfg.Features.Quota && usage != nil
+
+	// Line 1: model(+context size) | account | git | speed | cost | duration
+	// When no quota bars, context bar is inlined into L1 (minimal/developer compact)
+	line1 := make([]string, 0, 8)
+	if hasQuotaBars {
+		line1 = append(line1, renderModelBadge(d.Model, d.ContextWindow.ContextWindowSize))
+	} else {
+		line1 = append(line1, renderModelBadge(d.Model, 0))
+		line1 = append(line1, renderContextBar(m.ContextPercent, d.ContextWindow, t))
+	}
 	if cfg.Features.Account && account != nil && account.EmailAddress != "" {
 		line1 = append(line1, renderAccount(account))
 	}
@@ -57,19 +68,12 @@ func buildLine1(d *StdinData, m Metrics, cfg Config, git *GitInfo, account *Acco
 		line1 = append(line1, costStr)
 	}
 	line1 = append(line1, renderDuration(d.Cost.TotalDurationMS))
-	return line1
-}
 
-func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, tools *ToolInfo, account *AccountInfo, cfg Config) []string {
-	t := cfg.Thresholds
-
-	// Line 1: model(+context size) | account | git | speed | cost | duration
-	line1 := buildLine1(d, m, cfg, git, account)
-
-	// Line 2: context bar | 5h quota bar | 7d quota bar
-	line2 := make([]string, 0, 3)
-	line2 = append(line2, renderContextBar(m.ContextPercent, d.ContextWindow, t))
-	if cfg.Features.Quota && usage != nil {
+	// Line 2: context bar | 5h quota bar | 7d quota bar (only when quota bars exist)
+	var line2 []string
+	if hasQuotaBars {
+		line2 = make([]string, 0, 3)
+		line2 = append(line2, renderContextBar(m.ContextPercent, d.ContextWindow, t))
 		line2 = append(line2, renderQuotaBar(usage.RemainingPercent5h, usage.ResetsAt5h, "5h", t))
 		line2 = append(line2, renderQuotaBar(usage.RemainingPercent7d, usage.ResetsAt7d, "7d", t))
 	}
@@ -123,19 +127,23 @@ func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, t
 }
 
 func renderDangerMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, _ *ToolInfo, t Thresholds) []string {
-	// Danger mode line 1: model | context bar | cost | duration (original layout)
-	line1 := make([]string, 0, 5)
-	line1 = append(line1, renderModelBadge(d.Model, d.ContextWindow.ContextWindowSize))
-	line1 = append(line1, renderContextBar(m.ContextPercent, d.ContextWindow, t))
-	if costStr := renderCost(d.Cost.TotalCostUSD, t); costStr != "" {
-		line1 = append(line1, costStr)
+	// L1: model | 🔴 danger context bar (remaining+ETA) | 5h quota bar | 7d quota bar
+	line1 := make([]string, 0, 4)
+	line1 = append(line1, renderModelBadge(d.Model, 0))
+	line1 = append(line1, renderContextBarDanger(m.ContextPercent, d.ContextWindow, d.Cost.TotalDurationMS, t))
+
+	if usage != nil {
+		if usage.RemainingPercent5h > 0 || !usage.ResetsAt5h.IsZero() {
+			line1 = append(line1, renderQuotaBar(usage.RemainingPercent5h, usage.ResetsAt5h, "5h", t))
+		}
+		if usage.RemainingPercent7d > 0 || !usage.ResetsAt7d.IsZero() {
+			line1 = append(line1, renderQuotaBar(usage.RemainingPercent7d, usage.ResetsAt7d, "7d", t))
+		}
 	}
-	line1 = append(line1, renderDuration(d.Cost.TotalDurationMS))
 
-	// Line 2: workspace/git | changes | token breakdown | speed | metrics
-	line2 := make([]string, 0, 10)
+	// L2: workspace/git | Δchanges | In:XK Out:XK | C:X% | speed | $cost $cost/h | duration
+	line2 := make([]string, 0, 8)
 
-	// Workspace + git
 	if ws := renderWorkspace(d); ws != "" {
 		if git != nil && git.Branch != "" {
 			line2 = append(line2, ws+renderGitCompact(git))
@@ -144,44 +152,32 @@ func renderDangerMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, _
 		}
 	}
 
-	// Code changes
 	if lines := renderLineChanges(d.Cost); lines != "" {
 		line2 = append(line2, lines)
 	}
 
-	// Token breakdown: In:XXK Out:YYK Cache:ZZK
 	if cu := d.ContextWindow.CurrentUsage; cu != nil {
-		line2 = append(line2, renderTokenBreakdown(cu))
+		line2 = append(line2, renderTokenIO(cu))
 	}
 
-	// Performance metrics
-	if m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
-		line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed, t))
-	}
 	if m.CacheEfficiency != nil {
 		line2 = append(line2, renderCacheEfficiencyCompact(*m.CacheEfficiency, t))
 	}
-	if m.APIWaitRatio != nil {
-		line2 = append(line2, renderAPIRatioCompact(*m.APIWaitRatio, t))
-	}
-	if m.CostPerMinute != nil {
-		// Show hourly cost in danger mode
-		hourly := *m.CostPerMinute * 60
-		line2 = append(line2, fmt.Sprintf("%s$%.1f/h%s", yellow, hourly, Reset))
+
+	if m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
+		line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed, t))
 	}
 
-	// Vim/Agent
-	if d.Vim != nil && d.Vim.Mode != "" {
-		line2 = append(line2, renderVimCompact(d.Vim.Mode))
-	}
-	if d.Agent != nil && d.Agent.Name != "" {
-		line2 = append(line2, renderAgentCompact(d.Agent.Name))
+	if costStr := renderCost(d.Cost.TotalCostUSD, t); costStr != "" {
+		costParts := costStr
+		if m.CostPerMinute != nil {
+			hourly := *m.CostPerMinute * 60
+			costParts += " " + fmt.Sprintf("%s$%.1f/h%s", yellow, hourly, Reset)
+		}
+		line2 = append(line2, costParts)
 	}
 
-	// Quota at the end of line 2 (danger mode)
-	if usage != nil {
-		line2 = append(line2, renderQuota(usage, t))
-	}
+	line2 = append(line2, renderDuration(d.Cost.TotalDurationMS))
 
 	return []string{joinParts(line1), joinParts(line2)}
 }
@@ -257,6 +253,65 @@ func renderContextBar(percent int, cw ContextWindow, t Thresholds) string {
 
 	return fmt.Sprintf("%s%s%s%s %d%% (%s/%s)", prefix, color, bar, Reset, percent,
 		formatTokenCount(usedTokens), formatTokenCount(totalTokens))
+}
+
+// renderContextBarDanger renders context bar with remaining tokens and ETA for danger mode.
+func renderContextBarDanger(percent int, cw ContextWindow, durationMS int64, t Thresholds) string {
+	const width = 10
+	filled := width * percent / 100
+	if filled > width {
+		filled = width
+	}
+	empty := width - filled
+
+	var b strings.Builder
+	b.Grow(width)
+	for i := 0; i < filled; i++ {
+		b.WriteRune('█')
+	}
+	for i := 0; i < empty; i++ {
+		b.WriteRune('░')
+	}
+	bar := b.String()
+
+	color := contextColor(percent, t)
+	prefix := "🔴 "
+
+	// Remaining tokens
+	totalTokens := cw.ContextWindowSize
+	usedTokens := totalTokens * percent / 100
+	remainTokens := totalTokens - usedTokens
+
+	// ETA: estimate minutes until context is full
+	eta := ""
+	durationMin := float64(durationMS) / 60000.0
+	if percent > 0 && durationMin > 0 {
+		remainPct := float64(100 - percent)
+		etaMin := remainPct * durationMin / float64(percent)
+		if etaMin < 1 {
+			eta = " ~<1m"
+		} else if etaMin < 60 {
+			eta = fmt.Sprintf(" ~%.0fm", etaMin)
+		} else {
+			h := int(etaMin) / 60
+			m := int(etaMin) % 60
+			if m == 0 {
+				eta = fmt.Sprintf(" ~%dh", h)
+			} else {
+				eta = fmt.Sprintf(" ~%dh%dm", h, m)
+			}
+		}
+	}
+
+	return fmt.Sprintf("%s%s%s%s %d%% (%s left%s)", prefix, color, bar, Reset, percent,
+		formatTokenCount(remainTokens), eta)
+}
+
+// renderTokenIO renders only In/Out token counts (without cache, used in danger mode).
+func renderTokenIO(cu *CurrentUsage) string {
+	return fmt.Sprintf("%sIn:%s%s %sOut:%s%s",
+		grey, formatTokenCount(cu.InputTokens), Reset,
+		grey, formatTokenCount(cu.OutputTokens), Reset)
 }
 
 func contextColor(p int, t Thresholds) string {

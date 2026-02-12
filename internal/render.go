@@ -200,8 +200,8 @@ func renderModelBadge(m Model, contextSize int) string {
 		suffix = " VX" // Vertex
 	}
 
-	// Append context window size
-	if contextSize > 0 {
+	// Append context window size (only for large windows like 1M+)
+	if contextSize >= 1000000 {
 		suffix += " (" + formatTokenCount(contextSize) + " context)"
 	}
 

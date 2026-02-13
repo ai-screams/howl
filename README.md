@@ -42,6 +42,7 @@ _Real-time statusline HUD showing 1M context session with 13 intelligent metrics
 
 - [Features](#features)
 - [Installation](#installation)
+- [Updating](#updating-)
 - [Uninstallation](#uninstallation)
 - [Usage](#usage)
 - [Architecture](#architecture)
@@ -191,6 +192,35 @@ The Makefile automatically configures your settings.json.
 ### Post-Installation ✅
 
 Restart Claude Code to activate the statusline. The HUD will appear at the bottom of your terminal.
+
+---
+
+## Updating 🔄
+
+### If installed via Plugin
+
+```bash
+/howl:setup
+```
+
+Re-running the setup skill downloads the latest binary and replaces the existing one. Your configuration (`~/.claude/hud/config.json`) is preserved.
+
+### If installed via Direct Download
+
+Re-download the latest binary:
+
+```bash
+curl -fsSL https://github.com/ai-screams/howl/releases/latest/download/howl_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/') \
+  -o ~/.claude/hud/howl && chmod +x ~/.claude/hud/howl
+```
+
+### If built from Source
+
+```bash
+cd howl && git pull && make install
+```
+
+No restart needed — changes apply on the next refresh (~300ms).
 
 ---
 

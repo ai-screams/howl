@@ -126,7 +126,7 @@ func TestRenderCost(t *testing.T) {
 	}{
 		{"below threshold returns empty", 0.0005, true, "", ""},
 		{"zero returns empty", 0, true, "", ""},
-		{"small cost white", 0.50, false, white, "$0.50"},
+		{"small cost default", 0.50, false, Reset, "$0.50"},
 		{"medium cost yellow", 1.50, false, yellow, "$1.50"},
 		{"high cost boldRed", 5.50, false, boldRed, "$5.50"},
 		{">=10 uses one decimal", 15.0, false, boldRed, "$15.0"},
@@ -519,32 +519,6 @@ func TestRenderCacheEfficiencyLabeled(t *testing.T) {
 	}
 }
 
-func TestRenderAPIRatioCompact(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name      string
-		pct       int
-		wantColor string
-	}{
-		{"high >=60 red", 60, red},
-		{"medium >=35 yellow", 35, yellow},
-		{"low <35 green", 34, green},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := renderAPIRatioCompact(tt.pct, DefaultThresholds())
-			if !strings.Contains(got, tt.wantColor) {
-				t.Errorf("renderAPIRatioCompact(%d) missing color %q in %q", tt.pct, tt.wantColor, got)
-			}
-			if !strings.Contains(got, "A") {
-				t.Errorf("renderAPIRatioCompact(%d) missing 'A' prefix in %q", tt.pct, got)
-			}
-		})
-	}
-}
-
 func TestRenderAPIRatioLabeled(t *testing.T) {
 	t.Parallel()
 
@@ -621,26 +595,6 @@ func TestRenderCostVelocityLabeled(t *testing.T) {
 				t.Errorf("renderCostVelocityLabeled(%f) missing 'Cost:' in %q", tt.perMin, got)
 			}
 		})
-	}
-}
-
-func TestRenderTokenBreakdown(t *testing.T) {
-	t.Parallel()
-
-	cu := &CurrentUsage{
-		InputTokens:          30000,
-		OutputTokens:         3000,
-		CacheReadInputTokens: 135000,
-	}
-	got := renderTokenBreakdown(cu)
-	if !strings.Contains(got, "In:30K") {
-		t.Errorf("renderTokenBreakdown() missing In:30K in %q", got)
-	}
-	if !strings.Contains(got, "Out:3K") {
-		t.Errorf("renderTokenBreakdown() missing Out:3K in %q", got)
-	}
-	if !strings.Contains(got, "Cache:135K") {
-		t.Errorf("renderTokenBreakdown() missing Cache:135K in %q", got)
 	}
 }
 
@@ -1718,7 +1672,7 @@ func TestRenderCost_CustomThresholds(t *testing.T) {
 		wantColor string
 	}{
 		{"$4.99 is yellow (between 3.0 and 10.0)", 4.99, yellow},
-		{"$2.99 is white (below 3.0)", 2.99, white},
+		{"$2.99 is default (below 3.0)", 2.99, Reset},
 		{"$10.0 is boldRed (at high)", 10.0, boldRed},
 		{"$15.0 is boldRed (above high)", 15.0, boldRed},
 		{"$3.0 is yellow (at medium)", 3.0, yellow},

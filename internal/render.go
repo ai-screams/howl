@@ -21,7 +21,6 @@ const (
 	blue    = "\033[34m"
 	magenta = "\033[35m"
 	cyan    = "\033[36m"
-	white   = "\033[37m"
 	boldRed = "\033[1;31m"
 	boldYlw = "\033[1;33m" // gold for opus
 	orange  = "\033[38;5;208m"
@@ -104,7 +103,6 @@ func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, t
 		line3 = append(line3, v)
 	}
 
-	// Line 4: tools and agents (conditional)
 	// Line 4: tools and agents with shared width budget
 	line4 := make([]string, 0, 3)
 
@@ -357,7 +355,7 @@ func renderCost(usd float64, t Thresholds) string {
 	case usd >= t.SessionCostMedium:
 		color = yellow
 	default:
-		color = white
+		color = Reset
 	}
 	if usd < 10 {
 		return fmt.Sprintf("%s$%.2f%s", color, usd, Reset)
@@ -461,10 +459,6 @@ func apiRatioColor(pct int, t Thresholds) string {
 	}
 }
 
-func renderAPIRatioCompact(pct int, t Thresholds) string {
-	return fmt.Sprintf("%sA%d%%%s", apiRatioColor(pct, t), pct, Reset)
-}
-
 func renderAPIRatioLabeled(pct int, t Thresholds) string {
 	return fmt.Sprintf("%sWait:%s%d%%%s", grey, apiRatioColor(pct, t), pct, Reset)
 }
@@ -528,18 +522,16 @@ func renderAgentCompact(name string) string {
 	return cyan + "@" + name + Reset
 }
 
-func renderTokenBreakdown(cu *CurrentUsage) string {
-	return fmt.Sprintf("%sIn:%s%s %sOut:%s%s %sCache:%s%s",
-		grey, formatTokenCount(cu.InputTokens), Reset,
-		grey, formatTokenCount(cu.OutputTokens), Reset,
-		green, formatTokenCount(cu.CacheReadInputTokens), Reset)
-}
-
 const (
 	maxToolNameLen   = 12
 	maxToolLineWidth = 80
 )
 
+// visibleLen computes the display width of a string, excluding ANSI escape sequences.
+// This implementation assumes all ANSI codes follow the CSI SGR (Select Graphic Rendition)
+// pattern: \033[...m. This is valid for this codebase, which uses only standard SGR codes
+// (colors, bold, dim) and 8-bit extended colors (\033[38;5;Nm). Other escape sequence
+// types (like cursor movement or OSC sequences) are not used and would require different parsing.
 func visibleLen(s string) int {
 	inEscape := false
 	count := 0
@@ -652,22 +644,6 @@ func formatTokenCount(tokens int) string {
 		return fmt.Sprintf("%.1fM", m)
 	}
 	return fmt.Sprintf("%.0fK", float64(tokens)/1000.0)
-}
-
-// renderQuota formats 5h/7d remaining percentage for display.
-func renderQuota(u *UsageData, t Thresholds) string {
-	color5 := quotaColor(u.RemainingPercent5h, t)
-	color7 := quotaColor(u.RemainingPercent7d, t)
-
-	now := time.Now()
-	until5h := formatTimeUntil(now, u.ResetsAt5h)
-	until7d := formatTimeUntil(now, u.ResetsAt7d)
-
-	return fmt.Sprintf("%s(%s)5h:%s %s%.0f%%%s/%s%.0f%%%s %s:7d(%s)%s",
-		dim, until5h, Reset,
-		color5, u.RemainingPercent5h, Reset,
-		color7, u.RemainingPercent7d, Reset,
-		grey, until7d, Reset)
 }
 
 func renderQuotaBar(remainPct float64, resetTime time.Time, label string, t Thresholds) string {

@@ -35,7 +35,7 @@ type ToolInfo struct {
 // ParseTranscript reads the last N lines of transcript to extract recent tools and agents.
 // Returns nil on any error (transcript parsing is optional).
 // shortenToolName extracts a readable short name from MCP tool names.
-// e.g. "mcp__plugin_serena_serena__find_symbol" → "serena__find_symbol"
+// e.g. "mcp__plugin_serena_serena__find_symbol" → "find_symbol"
 // Non-MCP tools (Edit, Read, Bash) are returned as-is.
 func shortenToolName(name string) string {
 	// Split by "__" double-underscore separator

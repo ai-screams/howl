@@ -236,18 +236,15 @@ func renderModelBadge(m Model, contextSize int) string {
 
 func renderContextBar(percent int, cw ContextWindow, t Thresholds) string {
 	const width = 10
-	filled := width * percent / 100
-	if filled > width {
-		filled = width
-	}
+	filled := min(width*percent/100, width)
 	empty := width - filled
 
 	var b strings.Builder
 	b.Grow(width)
-	for i := 0; i < filled; i++ {
+	for range filled {
 		b.WriteRune('█')
 	}
-	for i := 0; i < empty; i++ {
+	for range empty {
 		b.WriteRune('░')
 	}
 	bar := b.String()
@@ -275,18 +272,15 @@ func renderContextBar(percent int, cw ContextWindow, t Thresholds) string {
 // renderContextBarDanger renders context bar with remaining tokens and ETA for danger mode.
 func renderContextBarDanger(percent int, cw ContextWindow, durationMS int64, t Thresholds) string {
 	const width = 10
-	filled := width * percent / 100
-	if filled > width {
-		filled = width
-	}
+	filled := min(width*percent/100, width)
 	empty := width - filled
 
 	var b strings.Builder
 	b.Grow(width)
-	for i := 0; i < filled; i++ {
+	for range filled {
 		b.WriteRune('█')
 	}
-	for i := 0; i < empty; i++ {
+	for range empty {
 		b.WriteRune('░')
 	}
 	bar := b.String()
@@ -648,21 +642,15 @@ func formatTokenCount(tokens int) string {
 
 func renderQuotaBar(remainPct float64, resetTime time.Time, label string, t Thresholds) string {
 	const width = 10
-	filled := int(remainPct) * width / 100
-	if filled > width {
-		filled = width
-	}
-	if filled < 0 {
-		filled = 0
-	}
+	filled := max(0, min(int(remainPct)*width/100, width))
 	empty := width - filled
 
 	var b strings.Builder
 	b.Grow(width)
-	for i := 0; i < filled; i++ {
+	for range filled {
 		b.WriteRune('█')
 	}
-	for i := 0; i < empty; i++ {
+	for range empty {
 		b.WriteRune('░')
 	}
 	bar := b.String()

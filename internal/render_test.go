@@ -650,33 +650,118 @@ func TestRenderTools(t *testing.T) {
 	tests := []struct {
 		name      string
 		tools     map[string]int
+		maxWidth  int
 		wantEmpty bool
 		wantParts []string
+		wantPlus  bool // expect "+N" overflow indicator
 	}{
-		{"nil map", nil, true, nil},
-		{"empty map", map[string]int{}, true, nil},
-		{"single tool", map[string]int{"Read": 5}, false, []string{"Read", "(5)"}},
+		{"nil map", nil, 80, true, nil, false},
+		{"empty map", map[string]int{}, 80, true, nil, false},
+		{"single tool", map[string]int{"Read": 5}, 80, false, []string{"Read", "(5)"}, false},
 		{
 			"more than 5 tools keeps top 5",
 			map[string]int{"A": 1, "B": 2, "C": 3, "D": 4, "E": 5, "F": 6, "G": 7},
+			80,
 			false,
 			[]string{"G", "(7)", "F", "(6)"},
+			false,
+		},
+		{
+			"long name truncated",
+			map[string]int{"search_for_pattern": 5},
+			80,
+			false,
+			[]string{"search_for_…", "(5)"},
+			false,
+		},
+		{
+			"budget overflow shows +N",
+			map[string]int{"Read": 10, "Edit": 8, "Bash": 5, "Write": 3, "Grep": 2},
+			30,
+			false,
+			[]string{"Read", "(10)"},
+			true,
+		},
+		{
+			"first tool always shown even if exceeds budget",
+			map[string]int{"find_symbol": 12},
+			5,
+			false,
+			[]string{"find_symbol", "(12)"},
+			false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := renderTools(tt.tools)
+			got := renderTools(tt.tools, tt.maxWidth)
 			if tt.wantEmpty {
 				if got != "" {
-					t.Errorf("renderTools(%v) = %q, want empty", tt.tools, got)
+					t.Errorf("renderTools(%v, %d) = %q, want empty", tt.tools, tt.maxWidth, got)
 				}
 				return
 			}
 			for _, part := range tt.wantParts {
 				if !strings.Contains(got, part) {
-					t.Errorf("renderTools(%v) missing %q in %q", tt.tools, part, got)
+					t.Errorf("renderTools(%v, %d) missing %q in %q", tt.tools, tt.maxWidth, part, got)
 				}
+			}
+			if tt.wantPlus && !strings.Contains(got, "+") {
+				t.Errorf("renderTools(%v, %d) expected +N overflow indicator in %q", tt.tools, tt.maxWidth, got)
+			}
+		})
+	}
+}
+
+func TestVisibleLen(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		input string
+		want  int
+	}{
+		{"plain text", "hello", 5},
+		{"with ANSI color", blue + "hello" + Reset, 5},
+		{"multiple ANSI", blue + "a" + Reset + " " + yellow + "b" + Reset, 3},
+		{"empty string", "", 0},
+		{"ANSI only", blue + Reset, 0},
+		{"with parentheses", blue + "Read" + Reset + "(5)", 7},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := visibleLen(tt.input)
+			if got != tt.want {
+				t.Errorf("visibleLen(%q) = %d, want %d", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTruncateToolName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name   string
+		input  string
+		maxLen int
+		want   string
+	}{
+		{"short name unchanged", "Read", 12, "Read"},
+		{"exact length unchanged", "find_symbol_", 12, "find_symbol_"},
+		{"long name truncated", "search_for_pattern", 12, "search_for_…"},
+		{"resolve-library-id", "resolve-library-id", 12, "resolve-lib…"},
+		{"maxLen 5", "long_name", 5, "long…"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := truncateToolName(tt.input, tt.maxLen)
+			if got != tt.want {
+				t.Errorf("truncateToolName(%q, %d) = %q, want %q", tt.input, tt.maxLen, got, tt.want)
 			}
 		})
 	}

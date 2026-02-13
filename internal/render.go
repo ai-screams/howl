@@ -105,12 +105,28 @@ func renderNormalMode(d *StdinData, m Metrics, git *GitInfo, usage *UsageData, t
 	}
 
 	// Line 4: tools and agents (conditional)
+	// Line 4: tools and agents with shared width budget
 	line4 := make([]string, 0, 3)
-	if cfg.Features.Tools && tools != nil && len(tools.Tools) > 0 {
-		line4 = append(line4, renderTools(tools.Tools))
-	}
+
+	// Pre-render agents to calculate remaining budget for tools
+	var agentStr string
 	if cfg.Features.Agents && tools != nil && len(tools.Agents) > 0 {
-		line4 = append(line4, renderAgents(tools.Agents))
+		agentStr = renderAgents(tools.Agents)
+	}
+
+	toolBudget := maxToolLineWidth
+	if agentStr != "" {
+		toolBudget -= visibleLen(agentStr) + 3 // 3 for " | " separator
+	}
+	if toolBudget < 20 {
+		toolBudget = 20
+	}
+
+	if cfg.Features.Tools && tools != nil && len(tools.Tools) > 0 {
+		line4 = append(line4, renderTools(tools.Tools, toolBudget))
+	}
+	if agentStr != "" {
+		line4 = append(line4, agentStr)
 	}
 
 	lines := []string{joinParts(line1)}
@@ -519,7 +535,39 @@ func renderTokenBreakdown(cu *CurrentUsage) string {
 		green, formatTokenCount(cu.CacheReadInputTokens), Reset)
 }
 
-func renderTools(tools map[string]int) string {
+const (
+	maxToolNameLen   = 12
+	maxToolLineWidth = 80
+)
+
+func visibleLen(s string) int {
+	inEscape := false
+	count := 0
+	for _, r := range s {
+		if r == '\033' {
+			inEscape = true
+			continue
+		}
+		if inEscape {
+			if r == 'm' {
+				inEscape = false
+			}
+			continue
+		}
+		count++
+	}
+	return count
+}
+
+func truncateToolName(name string, maxLen int) string {
+	runes := []rune(name)
+	if len(runes) <= maxLen {
+		return name
+	}
+	return string(runes[:maxLen-1]) + "…"
+}
+
+func renderTools(tools map[string]int, maxWidth int) string {
 	if len(tools) == 0 {
 		return ""
 	}
@@ -539,16 +587,32 @@ func renderTools(tools map[string]int) string {
 		entries = entries[:5]
 	}
 
-	parts := make([]string, len(entries))
-	for i, e := range entries {
-		parts[i] = fmt.Sprintf("%s%s%s(%d)", blue, e.name, Reset, e.count)
-	}
-	result := ""
-	for i, p := range parts {
-		if i > 0 {
+	var result string
+	shown := 0
+	for _, e := range entries {
+		name := truncateToolName(e.name, maxToolNameLen)
+		part := fmt.Sprintf("%s%s%s(%d)", blue, name, Reset, e.count)
+
+		candidate := result
+		if shown > 0 {
+			candidate += " "
+		}
+		candidate += part
+
+		// Always show at least 1 tool; after that, check budget
+		if shown > 0 && visibleLen(candidate) > maxWidth {
+			remaining := len(entries) - shown
+			if remaining > 0 {
+				result += fmt.Sprintf(" +%d", remaining)
+			}
+			break
+		}
+
+		if shown > 0 {
 			result += " "
 		}
-		result += p
+		result += part
+		shown++
 	}
 	return result
 }

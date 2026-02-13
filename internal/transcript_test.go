@@ -266,9 +266,9 @@ func TestShortenToolName(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"MCP serena tool", "mcp__plugin_serena_serena__find_symbol", "serena__find_symbol"},
-		{"MCP context7 tool", "mcp__plugin_context7_context7__resolve-library-id", "context7__resolve-library-id"},
-		{"MCP sequential thinking", "mcp__sequential-thinking__sequentialthinking", "sequential-thinking__sequentialthinking"},
+		{"MCP serena tool", "mcp__plugin_serena_serena__find_symbol", "find_symbol"},
+		{"MCP context7 tool", "mcp__plugin_context7_context7__resolve-library-id", "resolve-library-id"},
+		{"MCP sequential thinking", "mcp__sequential-thinking__sequentialthinking", "sequentialthinking"},
 		{"built-in Edit", "Edit", "Edit"},
 		{"built-in Read", "Read", "Read"},
 		{"built-in Bash", "Bash", "Bash"},

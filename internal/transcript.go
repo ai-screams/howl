@@ -44,17 +44,8 @@ func shortenToolName(name string) string {
 		return name
 	}
 
-	toolName := parts[len(parts)-1]
-	serverPart := parts[len(parts)-2]
-
-	// Strip "plugin_" prefix if present
-	serverPart = strings.TrimPrefix(serverPart, "plugin_")
-
-	// Take last "_"-separated segment as the plugin name
-	segments := strings.Split(serverPart, "_")
-	pluginName := segments[len(segments)-1]
-
-	return pluginName + "__" + toolName
+	// Strip plugin prefix entirely, keep only tool name
+	return parts[len(parts)-1]
 }
 
 func ParseTranscript(path string) *ToolInfo {

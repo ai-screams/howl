@@ -13,8 +13,8 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/ai-screams/howl?logo=github&logoColor=white)](https://github.com/ai-screams/howl/graphs/commit-activity)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/howl/ci.yaml?label=CI&logo=githubactions&logoColor=white)](https://github.com/ai-screams/howl/actions)
-[![Coverage](https://img.shields.io/badge/Coverage-96.1%25-brightgreen?logo=go&logoColor=white)]()
-[![Tests](https://img.shields.io/badge/Tests-139%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
+[![Coverage](https://img.shields.io/badge/Coverage-95.2%25-brightgreen?logo=go&logoColor=white)]()
+[![Tests](https://img.shields.io/badge/Tests-129%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
 [![Go Report](https://goreportcard.com/badge/github.com/ai-screams/howl)](https://goreportcard.com/report/github.com/ai-screams/howl)
 [![Go Reference](https://pkg.go.dev/badge/github.com/ai-screams/howl.svg)](https://pkg.go.dev/github.com/ai-screams/howl)
 [![Security](https://img.shields.io/badge/govulncheck-passing-brightgreen?logo=go&logoColor=white)]()
@@ -71,7 +71,7 @@ _Real-time statusline HUD showing 1M context session with 13 intelligent metrics
 ### Essential Status 🎯
 
 - **Model Tier Badge** — Color-coded Opus (gold) / Sonnet (cyan) / Haiku (green)
-- **Context Health Bar** — Visual 20-char bar with 4-tier gradient
+- **Context Health Bar** — Visual 10-char bar with 4-tier gradient
 - **Token Absolutes** — See exact usage (210K/1M) with adaptive K/M formatting
 - **Usage Quota** — Live 5h/7d limits with reset countdowns
 
@@ -265,10 +265,10 @@ Howl runs automatically as a subprocess every ~300ms. No manual interaction need
 <summary>Text output (for accessibility)</summary>
 
 ```
-[Sonnet 4.5] | ████░░░░░░░░░░░░░░░░ 21% (210K/1M) | $24.5 | 29h15m
-hanyul.ryu@gmail.com | main | +328/-67 | 15tok/s | (2h)5h: 78%/88% :7d(3d21h)
+🟢 Sonnet 4.5 1M | hanyul.ryu@gmail.com | main | 15 tok/s | $24.5 | 29h15m
+██░░░░░░░░  21% (210K/  1M) | ████████░░  78% (2h00m/5h) | █████████░  88% (3d21h/7d)
++328 -67 | Cache 99% (R:180K W:30K) | Wait 6% | $0.01/m | VIM:I | CC 1.0.18
 Bash(2)
-Cache:99% | Wait:6% | Cost:$0.01/m | I
 ```
 
 </details>
@@ -281,22 +281,22 @@ Cache:99% | Wait:6% | Cost:$0.01/m | I
 <summary>Text output (for accessibility)</summary>
 
 ```
-🔴 [Opus 4.6] | ████████████████████ 100% (200K/200K) | $24.5 | 29h17m
-hud/main | +328/-67 | In:0K Out:0K Cache:212K | 15tok/s | C99% | A6% | $0.8/h | I | (2h)5h: 72%/87% :7d(3d21h)
+🟣 Opus 4.6 | 🔴 ██████████ 100% 0K left ~0m | ████████░░  72% (2h00m/5h)
+main | +328 -67 | 15 tok/s | Cache 99% | Wait 6% | $0.01/m
 ```
 
 </details>
 
 ### Metrics Explained
 
-| Metric           | Meaning                                         | Color Coding                                      |
-| ---------------- | ----------------------------------------------- | ------------------------------------------------- |
-| **Cache:96%**    | Prompt cache efficiency (% of input from cache) | Green (80%+), Yellow (50-80%), Red (<50%)         |
-| **Wait:41%**     | Time spent waiting for API responses            | Green (<35%), Yellow (35-60%), Red (60%+)         |
-| **Cost:$0.19/m** | API spending rate per minute                    | Green (<$0.10), Yellow ($0.10-0.50), Red ($0.50+) |
-| **50tok/s**      | Output token generation speed                   | Green (60+), Yellow (30-60), Orange (<30)         |
-| **(2h)5h: 55%**  | 5-hour quota: 55% remaining, resets in 2 hours  | Gradient based on % remaining                     |
-| **:7d(3d6h)**    | 7-day quota: 42% remaining, resets in 3d6h      | Gradient based on % remaining                     |
+| Metric             | Meaning                                         | Color Coding                                      |
+| ------------------ | ----------------------------------------------- | ------------------------------------------------- |
+| **Cache 96%**      | Prompt cache efficiency (% of input from cache) | Green (80%+), Yellow (50-80%), Red (<50%)         |
+| **Wait 41%**       | Time spent waiting for API responses            | Green (<35%), Yellow (35-60%), Red (60%+)         |
+| **$0.19/m**        | API spending rate per minute                    | Green (<$0.10), Yellow ($0.10-0.50), Red ($0.50+) |
+| **50 tok/s**       | Output token generation speed                   | Green (60+), Yellow (30-60), Orange (<30)         |
+| **78% (2h00m/5h)** | 5-hour quota: 78% remaining, resets in 2h       | Gradient based on % remaining                     |
+| **88% (3d21h/7d)** | 7-day quota: 88% remaining, resets in 3d21h     | Gradient based on % remaining                     |
 
 > **Tip:** All color thresholds above are defaults. You can customize every breakpoint via `/howl:threshold` or `~/.claude/hud/config.json`. See [Custom Thresholds](#custom-thresholds) below.
 
@@ -370,7 +370,7 @@ howl/
 ### Key Modules
 
 - **constants.go** — Default threshold constants (danger %, cache %, speed, cost, quotas, timeouts)
-- **config.go** — Configuration system with presets, feature toggles, priority ordering, and 17 customizable thresholds
+- **config.go** — Configuration system with presets, feature toggles, and 17 customizable thresholds
 - **types.go** — StdinData schema matching Claude Code's JSON output, model tier classification
 - **metrics.go** — Cache efficiency, API ratio, cost velocity, response speed calculations
 - **render.go** — ANSI color codes, adaptive layouts (normal 2-4 lines / danger 2 lines), threshold-driven colors

@@ -505,3 +505,52 @@ func TestGetUsage_PartialAPIResponse(t *testing.T) {
 		t.Errorf("ResetsAt7d = %v, want zero time for missing field", got.ResetsAt7d)
 	}
 }
+
+func TestExtractAccessToken(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "valid complete JSON",
+			input: `{"claudeAiOauth":{"accessToken":"sk-ant-token123"}}`,
+			want:  "sk-ant-token123",
+		},
+		{
+			name:  "truncated JSON (Keychain ~2KB limit)",
+			input: `{"claudeAiOauth":{"accessToken":"sk-ant-token456"},"other":{"nested":{"deep":"val`,
+			want:  "sk-ant-token456",
+		},
+		{
+			name:  "JSON with control characters before token",
+			input: "{\"claudeAiOauth\":{\"accessToken\":\"sk-ant-token789\"},\"x\":\"line1\nline2\"}",
+			want:  "sk-ant-token789",
+		},
+		{
+			name:  "empty input",
+			input: "",
+			want:  "",
+		},
+		{
+			name:  "no accessToken field",
+			input: `{"claudeAiOauth":{"refreshToken":"rt-123"}}`,
+			want:  "",
+		},
+		{
+			name:  "whitespace around colon",
+			input: `{"claudeAiOauth":{"accessToken" : "sk-ant-spaced"}}`,
+			want:  "sk-ant-spaced",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got := extractAccessToken([]byte(tt.input))
+			if got != tt.want {
+				t.Errorf("extractAccessToken() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

@@ -5,16 +5,18 @@ import "strings"
 // StdinData represents the top-level JSON structure piped by Claude Code every ~300ms.
 // It contains session metrics, context window usage, cost data, and workspace information.
 type StdinData struct {
-	SessionID      string        `json:"session_id"`
-	TranscriptPath string        `json:"transcript_path"`
-	CWD            string        `json:"cwd"`
-	Version        string        `json:"version"`
-	Model          Model         `json:"model"`
-	Workspace      Workspace     `json:"workspace"`
-	Cost           Cost          `json:"cost"`
-	ContextWindow  ContextWindow `json:"context_window"`
-	Vim            *Vim          `json:"vim"`
-	Agent          *Agent        `json:"agent"`
+	SessionID         string        `json:"session_id"`
+	TranscriptPath    string        `json:"transcript_path"`
+	CWD               string        `json:"cwd"`
+	Version           string        `json:"version"`
+	Model             Model         `json:"model"`
+	Workspace         Workspace     `json:"workspace"`
+	Cost              Cost          `json:"cost"`
+	ContextWindow     ContextWindow `json:"context_window"`
+	Exceeds200KTokens bool          `json:"exceeds_200k_tokens"`
+	OutputStyle       *OutputStyle  `json:"output_style"`
+	Vim               *Vim          `json:"vim"`
+	Agent             *Agent        `json:"agent"`
 }
 
 // Model represents the AI model being used for the session.
@@ -54,6 +56,11 @@ type CurrentUsage struct {
 	OutputTokens             int `json:"output_tokens"`
 	CacheCreationInputTokens int `json:"cache_creation_input_tokens"`
 	CacheReadInputTokens     int `json:"cache_read_input_tokens"`
+}
+
+// OutputStyle represents the current output style configuration.
+type OutputStyle struct {
+	Name string `json:"name"`
 }
 
 // Vim represents the current vim mode if enabled in Claude Code.

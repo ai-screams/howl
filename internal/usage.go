@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"time"
 )
 
@@ -123,16 +124,12 @@ func getOAuthToken() string {
 		return ""
 	}
 
-	// Parse JSON structure: {"claudeAiOauth":{"accessToken":"..."}}
-	var creds struct {
-		ClaudeAiOauth struct {
-			AccessToken string `json:"accessToken"`
-		} `json:"claudeAiOauth"`
-	}
-	if err := json.Unmarshal(out, &creds); err != nil {
-		return ""
-	}
-	return creds.ClaudeAiOauth.AccessToken
+	// Extract accessToken via regex. The Keychain stores all Claude Code
+	// credentials in one large JSON blob that may exceed the ~2KB output
+	// limit of `security -w`, producing truncated (unparseable) JSON.
+	// Regex extraction is robust against truncation since the token appears
+	// near the start of the blob.
+	return extractAccessToken(out)
 }
 
 func sanitizeSessionID(sessionID string) string {
@@ -170,4 +167,17 @@ func saveCachedUsage(sessionID string, usage *UsageData) {
 		return
 	}
 	_ = os.WriteFile(cachePath(sessionID), data, 0600)
+}
+
+// accessTokenRe matches "accessToken":"<value>" in JSON, tolerating truncated blobs.
+var accessTokenRe = regexp.MustCompile(`"accessToken"\s*:\s*"([^"]+)"`)
+
+// extractAccessToken pulls the OAuth access token from a potentially truncated
+// Keychain JSON blob using regex instead of json.Unmarshal.
+func extractAccessToken(data []byte) string {
+	m := accessTokenRe.FindSubmatch(data)
+	if m == nil {
+		return ""
+	}
+	return string(m[1])
 }

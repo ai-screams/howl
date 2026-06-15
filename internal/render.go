@@ -2,7 +2,9 @@ package internal
 
 import (
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -61,8 +63,10 @@ func renderNormalMode(rc RenderContext) []string {
 	if cfg.Features.Git && git != nil && git.Branch != "" {
 		line1 = append(line1, renderGitCompact(git))
 	}
-	if cfg.Features.ResponseSpeed && m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
-		line1 = append(line1, renderResponseSpeed(*m.ResponseSpeed, t))
+	if cfg.Features.OutputTokens {
+		if s := renderOutputTokens(d.ContextWindow.CurrentUsage); s != "" {
+			line1 = append(line1, s)
+		}
 	}
 	if costStr := renderCost(d.Cost.TotalCostUSD, t); costStr != "" {
 		line1 = append(line1, costStr)
@@ -74,8 +78,12 @@ func renderNormalMode(rc RenderContext) []string {
 	if hasQuotaBars {
 		line2 = make([]string, 0, 3)
 		line2 = append(line2, renderContextBar(m.ContextPercent, d.ContextWindow, t))
-		line2 = append(line2, renderQuotaBar(usage.RemainingPercent5h, usage.ResetsAt5h, "5h", t))
-		line2 = append(line2, renderQuotaBar(usage.RemainingPercent7d, usage.ResetsAt7d, "7d", t))
+		if s := renderQuotaWindow(usage.FiveHour, "5h", t); s != "" {
+			line2 = append(line2, s)
+		}
+		if s := renderQuotaWindow(usage.SevenDay, "7d", t); s != "" {
+			line2 = append(line2, s)
+		}
 	}
 
 	// Line 3: line changes | cache | wait | cost velocity (+ vim/agent conditionally)
@@ -100,6 +108,31 @@ func renderNormalMode(rc RenderContext) []string {
 	if cfg.Features.AgentName && d.Agent != nil && d.Agent.Name != "" {
 		line3 = append(line3, renderAgentCompact(d.Agent.Name))
 	}
+	if cfg.Features.Effort {
+		if s := renderEffort(d.Effort); s != "" {
+			line3 = append(line3, s)
+		}
+	}
+	if cfg.Features.Thinking {
+		if s := renderThinking(d.Thinking); s != "" {
+			line3 = append(line3, s)
+		}
+	}
+	if cfg.Features.SessionName {
+		if s := renderSessionName(d.SessionName); s != "" {
+			line3 = append(line3, s)
+		}
+	}
+	if cfg.Features.PullRequest {
+		if s := renderPR(d.PR); s != "" {
+			line3 = append(line3, s)
+		}
+	}
+	if cfg.Features.Worktree {
+		if s := renderWorktreeName(d.Worktree); s != "" {
+			line3 = append(line3, s)
+		}
+	}
 	if v := renderVersion(d.Version); v != "" {
 		line3 = append(line3, v)
 	}
@@ -113,7 +146,7 @@ func renderNormalMode(rc RenderContext) []string {
 		agentStr = renderAgents(tools.Agents)
 	}
 
-	toolBudget := maxToolLineWidth
+	toolBudget := terminalColumns()
 	if agentStr != "" {
 		toolBudget -= visibleLen(agentStr) + 3 // 3 for " | " separator
 	}
@@ -149,11 +182,11 @@ func renderDangerMode(rc RenderContext) []string {
 	line1 = append(line1, renderContextBarDanger(m.ContextPercent, d.ContextWindow, d.Cost.TotalDurationMS, t))
 
 	if usage != nil {
-		if usage.RemainingPercent5h > 0 || !usage.ResetsAt5h.IsZero() {
-			line1 = append(line1, renderQuotaBar(usage.RemainingPercent5h, usage.ResetsAt5h, "5h", t))
+		if s := renderQuotaWindow(usage.FiveHour, "5h", t); s != "" {
+			line1 = append(line1, s)
 		}
-		if usage.RemainingPercent7d > 0 || !usage.ResetsAt7d.IsZero() {
-			line1 = append(line1, renderQuotaBar(usage.RemainingPercent7d, usage.ResetsAt7d, "7d", t))
+		if s := renderQuotaWindow(usage.SevenDay, "7d", t); s != "" {
+			line1 = append(line1, s)
 		}
 	}
 
@@ -178,10 +211,6 @@ func renderDangerMode(rc RenderContext) []string {
 
 	if m.CacheEfficiency != nil {
 		line2 = append(line2, renderCacheEfficiencyCompact(*m.CacheEfficiency, t))
-	}
-
-	if m.ResponseSpeed != nil && *m.ResponseSpeed > 0 {
-		line2 = append(line2, renderResponseSpeed(*m.ResponseSpeed, t))
 	}
 
 	if costStr := renderCost(d.Cost.TotalCostUSD, t); costStr != "" {
@@ -452,17 +481,14 @@ func renderCostVelocityLabeled(perMin float64, t Thresholds) string {
 	return fmt.Sprintf("%sCost:%s$%.2f/m%s", grey, color, perMin, Reset)
 }
 
-func renderResponseSpeed(tokPerSec int, t Thresholds) string {
-	var color string
-	switch {
-	case tokPerSec >= t.SpeedFast:
-		color = green // fast
-	case tokPerSec >= t.SpeedModerate:
-		color = yellow // moderate
-	default:
-		color = orange // slow
+// renderOutputTokens shows the output token count of the current/last API
+// response — a truthful replacement for the removed tok/s speed metric.
+// Returns "" when there is nothing to show.
+func renderOutputTokens(cu *CurrentUsage) string {
+	if cu == nil || cu.OutputTokens <= 0 {
+		return ""
 	}
-	return fmt.Sprintf("%s%dtok/s%s", color, tokPerSec, Reset)
+	return grey + "Out:" + formatTokenCount(cu.OutputTokens) + Reset
 }
 
 func renderVimCompact(mode string) string {
@@ -488,6 +514,69 @@ func renderVersion(version string) string {
 		return ""
 	}
 	return grey + "v" + version + Reset
+}
+
+// Optional CC 2.1 field renderers. Each returns "" when its source is absent so
+// callers append conditionally (OCP: add a field by adding a function).
+
+func renderEffort(e *Effort) string {
+	if e == nil || e.Level == "" {
+		return ""
+	}
+	return dim + "E:" + e.Level + Reset
+}
+
+func renderThinking(th *Thinking) string {
+	if th == nil || !th.Enabled {
+		return ""
+	}
+	return cyan + "Think" + Reset
+}
+
+func renderSessionName(name string) string {
+	if name == "" {
+		return ""
+	}
+	runes := []rune(name)
+	if len(runes) > 12 {
+		name = string(runes[:12])
+	}
+	return dim + name + Reset
+}
+
+func renderPR(pr *PullRequest) string {
+	if pr == nil || pr.Number == 0 {
+		return ""
+	}
+	s := fmt.Sprintf("%sPR#%d", cyan, pr.Number)
+	if pr.ReviewState != "" {
+		s += " " + pr.ReviewState
+	}
+	return s + Reset
+}
+
+func renderWorktreeName(wt *Worktree) string {
+	if wt == nil || wt.Name == "" {
+		return ""
+	}
+	name := wt.Name
+	runes := []rune(name)
+	if len(runes) > 10 {
+		name = string(runes[:10])
+	}
+	return cyan + "wt:" + name + Reset
+}
+
+// terminalColumns returns the terminal width from the COLUMNS env var that
+// Claude Code provides to statusline commands (v2.1.153+), clamped to a sane
+// range. Falls back to maxToolLineWidth when unset/invalid (tests, non-Claude
+// execution) so behavior is unchanged where COLUMNS is absent.
+func terminalColumns() int {
+	n, err := strconv.Atoi(os.Getenv("COLUMNS"))
+	if err != nil {
+		return maxToolLineWidth
+	}
+	return min(max(n, 40), 240)
 }
 
 func renderAgentCompact(name string) string {
@@ -622,6 +711,16 @@ func formatTokenCount(tokens int) string {
 	return fmt.Sprintf("%.0fK", float64(tokens)/1000.0)
 }
 
+// renderQuotaWindow renders one quota window, or "" when the window is absent.
+// Single code path for 5h/7d across normal and danger modes (DRY); presence is
+// the pointer, never a zero value.
+func renderQuotaWindow(w *UsageWindow, label string, t Thresholds) string {
+	if w == nil {
+		return ""
+	}
+	return renderQuotaBar(w.RemainingPercent, w.ResetsAt, label, t)
+}
+
 func renderQuotaBar(remainPct float64, resetTime time.Time, label string, t Thresholds) string {
 	const width = 10
 	filled := max(0, min(int(remainPct)*width/100, width))
@@ -630,13 +729,47 @@ func renderQuotaBar(remainPct float64, resetTime time.Time, label string, t Thre
 	color := quotaColor(remainPct, t)
 	now := time.Now()
 	var until string
+	var windowLen time.Duration
 	if label == "5h" {
 		until = formatTimeUntilWithMinutes(now, resetTime)
+		windowLen = 5 * time.Hour
 	} else {
 		until = formatTimeUntil(now, resetTime)
+		windowLen = 7 * 24 * time.Hour
 	}
 
-	return fmt.Sprintf("%s%s%s %3.0f%% (%s/%s)", color, bar, Reset, remainPct, until, label)
+	marker := quotaPaceMarker(remainPct, resetTime, now, windowLen)
+	return fmt.Sprintf("%s%s%s %3.0f%% (%s/%s)%s", color, bar, Reset, remainPct, until, label, marker)
+}
+
+// quotaPaceMarker returns a "🔥" warning when the window is projected to be
+// exhausted before it resets — i.e. consumption is ahead of the even time-based
+// pace. Pure function of a single stdin snapshot (no history needed): it
+// compares the average burn rate so far against the rate that would last until
+// reset. Returns "" when on pace, already exhausted, or signal is too weak.
+func quotaPaceMarker(remainPct float64, resetsAt, now time.Time, windowLen time.Duration) string {
+	if resetsAt.IsZero() || remainPct <= 0 || windowLen <= 0 {
+		return ""
+	}
+	timeToReset := resetsAt.Sub(now)
+	if timeToReset <= 0 {
+		return ""
+	}
+	elapsed := windowLen - timeToReset
+	if elapsed < windowLen/20 { // need >=5% elapsed to project meaningfully
+		return ""
+	}
+	used := 100 - remainPct
+	if used <= 0 {
+		return ""
+	}
+	// Ahead of pace iff time-to-exhaust < time-to-reset. Cross-multiplied to
+	// avoid float-duration construction: remainPct/burn < timeToReset, where
+	// burn = used/elapsed  =>  remainPct*elapsed < used*timeToReset.
+	if remainPct*elapsed.Seconds() < used*timeToReset.Seconds() {
+		return boldRed + "🔥" + Reset
+	}
+	return ""
 }
 
 func formatTimeUntil(now, target time.Time) string {

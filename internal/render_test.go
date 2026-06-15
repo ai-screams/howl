@@ -1,8 +1,10 @@
 package internal
 
 import (
+	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestRenderModelBadge(t *testing.T) {
@@ -545,33 +547,6 @@ func TestRenderAPIRatioLabeled(t *testing.T) {
 	}
 }
 
-func TestRenderResponseSpeed(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name      string
-		speed     int
-		wantColor string
-	}{
-		{"fast >=60 green", 60, green},
-		{"moderate >=30 yellow", 30, yellow},
-		{"slow <30 orange", 29, orange},
-		{"very fast", 100, green},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := renderResponseSpeed(tt.speed, DefaultThresholds())
-			if !strings.Contains(got, tt.wantColor) {
-				t.Errorf("renderResponseSpeed(%d) missing color %q in %q", tt.speed, tt.wantColor, got)
-			}
-			if !strings.Contains(got, "tok/s") {
-				t.Errorf("renderResponseSpeed(%d) missing 'tok/s' in %q", tt.speed, got)
-			}
-		})
-	}
-}
-
 func TestRenderCostVelocityLabeled(t *testing.T) {
 	t.Parallel()
 
@@ -933,7 +908,7 @@ func TestRenderWithConfig(t *testing.T) {
 
 	t.Run("cost-focused preset shows quota metrics", func(t *testing.T) {
 		cfg := PresetConfig("cost-focused")
-		usage := &UsageData{RemainingPercent5h: 80.0, RemainingPercent7d: 90.0}
+		usage := &UsageData{FiveHour: &UsageWindow{RemainingPercent: 80.0}, SevenDay: &UsageWindow{RemainingPercent: 90.0}}
 		lines := Render(RenderContext{Data: d, Metrics: m, Usage: usage, Account: account, Config: cfg})
 		// cost-focused with usage: L1 (model+context size+cost+dur) + L2 (3 bars) = 2+ lines
 		if len(lines) < 2 {
@@ -943,6 +918,180 @@ func TestRenderWithConfig(t *testing.T) {
 		output := strings.Join(lines, " ")
 		if !strings.Contains(output, "user@example.com") {
 			t.Error("cost-focused preset should show account")
+		}
+	})
+}
+
+func TestTerminalColumns(t *testing.T) {
+	// Not parallel: mutates the COLUMNS environment variable.
+	tests := []struct {
+		name string
+		env  string
+		set  bool
+		want int
+	}{
+		{"unset falls back to 80", "", false, 80},
+		{"invalid falls back to 80", "abc", true, 80},
+		{"empty falls back to 80", "", true, 80},
+		{"narrow 60", "60", true, 60},
+		{"wide 120", "120", true, 120},
+		{"below floor clamps to 40", "20", true, 40},
+		{"above ceiling clamps to 240", "999", true, 240},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.set {
+				t.Setenv("COLUMNS", tt.env)
+			} else {
+				_ = os.Unsetenv("COLUMNS")
+			}
+			if got := terminalColumns(); got != tt.want {
+				t.Errorf("terminalColumns() with COLUMNS=%q = %d, want %d", tt.env, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestOptionalFieldRenderers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("absent sources render empty", func(t *testing.T) {
+		t.Parallel()
+		if got := renderEffort(nil); got != "" {
+			t.Errorf("renderEffort(nil) = %q, want empty", got)
+		}
+		if got := renderThinking(nil); got != "" {
+			t.Errorf("renderThinking(nil) = %q, want empty", got)
+		}
+		if got := renderThinking(&Thinking{Enabled: false}); got != "" {
+			t.Errorf("renderThinking(disabled) = %q, want empty", got)
+		}
+		if got := renderSessionName(""); got != "" {
+			t.Errorf("renderSessionName(\"\") = %q, want empty", got)
+		}
+		if got := renderPR(nil); got != "" {
+			t.Errorf("renderPR(nil) = %q, want empty", got)
+		}
+		if got := renderPR(&PullRequest{Number: 0}); got != "" {
+			t.Errorf("renderPR(0) = %q, want empty", got)
+		}
+		if got := renderWorktreeName(nil); got != "" {
+			t.Errorf("renderWorktreeName(nil) = %q, want empty", got)
+		}
+	})
+
+	t.Run("present sources render labels", func(t *testing.T) {
+		t.Parallel()
+		if got := renderEffort(&Effort{Level: "high"}); !strings.Contains(got, "E:high") {
+			t.Errorf("renderEffort = %q, want E:high", got)
+		}
+		if got := renderThinking(&Thinking{Enabled: true}); !strings.Contains(got, "Think") {
+			t.Errorf("renderThinking = %q, want Think", got)
+		}
+		if got := renderSessionName("my-session"); !strings.Contains(got, "my-session") {
+			t.Errorf("renderSessionName = %q, want my-session", got)
+		}
+		if got := renderPR(&PullRequest{Number: 1234, ReviewState: "pending"}); !strings.Contains(got, "PR#1234") || !strings.Contains(got, "pending") {
+			t.Errorf("renderPR = %q, want PR#1234 pending", got)
+		}
+		if got := renderPR(&PullRequest{Number: 9}); !strings.Contains(got, "PR#9") {
+			t.Errorf("renderPR(no review_state) = %q, want PR#9", got)
+		}
+		if got := renderWorktreeName(&Worktree{Name: "feat"}); !strings.Contains(got, "wt:feat") {
+			t.Errorf("renderWorktreeName = %q, want wt:feat", got)
+		}
+	})
+
+	t.Run("truncation", func(t *testing.T) {
+		t.Parallel()
+		if got := renderSessionName("0123456789ABCDEF"); strings.Contains(got, "ABCDEF") {
+			t.Errorf("renderSessionName should truncate at 12 runes: %q", got)
+		}
+		if got := renderWorktreeName(&Worktree{Name: "0123456789XYZ"}); strings.Contains(got, "XYZ") {
+			t.Errorf("renderWorktreeName should truncate at 10 runes: %q", got)
+		}
+	})
+
+	t.Run("toggles gate rendering in normal mode", func(t *testing.T) {
+		t.Parallel()
+		d := &StdinData{
+			Model:         Model{DisplayName: "Claude Sonnet 4.5"},
+			ContextWindow: ContextWindow{ContextWindowSize: 200000, UsedPercentage: floatPtr(40)},
+			Cost:          Cost{TotalDurationMS: 120000, TotalCostUSD: 1.0},
+			Effort:        &Effort{Level: "high"},
+			PR:            &PullRequest{Number: 7},
+		}
+		m := Metrics{ContextPercent: 40}
+
+		// Default preset: optional renderers off -> not shown.
+		off := strings.Join(Render(RenderContext{Data: d, Metrics: m, Config: PresetConfig("full")}), " ")
+		if strings.Contains(off, "E:high") || strings.Contains(off, "PR#7") {
+			t.Errorf("optional fields must be off by default: %q", off)
+		}
+
+		// Explicitly enabled -> shown.
+		cfg := PresetConfig("full")
+		cfg.Features.Effort = true
+		cfg.Features.PullRequest = true
+		on := strings.Join(Render(RenderContext{Data: d, Metrics: m, Config: cfg}), " ")
+		if !strings.Contains(on, "E:high") {
+			t.Errorf("Effort should render when enabled: %q", on)
+		}
+		if !strings.Contains(on, "PR#7") {
+			t.Errorf("PR should render when enabled: %q", on)
+		}
+	})
+}
+
+// TestRenderQuotaWindowPresence guards against the regression where an absent
+// rate-limit window rendered a fake "0% (?/...)" bar. Presence is the pointer.
+func TestRenderQuotaWindowPresence(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil window renders nothing", func(t *testing.T) {
+		t.Parallel()
+		if got := renderQuotaWindow(nil, "5h", DefaultThresholds()); got != "" {
+			t.Errorf("renderQuotaWindow(nil) = %q, want empty", got)
+		}
+	})
+
+	t.Run("present window renders its label", func(t *testing.T) {
+		t.Parallel()
+		got := renderQuotaWindow(&UsageWindow{RemainingPercent: 80}, "5h", DefaultThresholds())
+		if !strings.Contains(got, "5h)") {
+			t.Errorf("renderQuotaWindow() = %q, want it to contain 5h label", got)
+		}
+	})
+
+	d := &StdinData{
+		Model:         Model{DisplayName: "Claude Sonnet 4.5"},
+		ContextWindow: ContextWindow{ContextWindowSize: 200000, UsedPercentage: floatPtr(40)},
+		Cost:          Cost{TotalDurationMS: 120000, TotalCostUSD: 1.0},
+	}
+	m := Metrics{ContextPercent: 40}
+	cfg := PresetConfig("full")
+
+	t.Run("only 5h present: 7d bar absent, no fake bar", func(t *testing.T) {
+		t.Parallel()
+		usage := &UsageData{FiveHour: &UsageWindow{RemainingPercent: 80}}
+		out := strings.Join(Render(RenderContext{Data: d, Metrics: m, Usage: usage, Config: cfg}), " ")
+		if !strings.Contains(out, "5h)") {
+			t.Errorf("expected 5h bar in output: %q", out)
+		}
+		if strings.Contains(out, "7d)") {
+			t.Errorf("absent 7d window must not render a bar: %q", out)
+		}
+	})
+
+	t.Run("only 7d present: 5h bar absent", func(t *testing.T) {
+		t.Parallel()
+		usage := &UsageData{SevenDay: &UsageWindow{RemainingPercent: 90}}
+		out := strings.Join(Render(RenderContext{Data: d, Metrics: m, Usage: usage, Config: cfg}), " ")
+		if !strings.Contains(out, "7d)") {
+			t.Errorf("expected 7d bar in output: %q", out)
+		}
+		if strings.Contains(out, "5h)") {
+			t.Errorf("absent 5h window must not render a bar: %q", out)
 		}
 	})
 }
@@ -1199,7 +1348,6 @@ func TestRenderNormalMode_AllLinesPresent(t *testing.T) {
 	cache := 80
 	apiRatio := 30
 	costPerMin := 0.05
-	speed := 100
 
 	d := &StdinData{
 		Model:         Model{DisplayName: "Claude Sonnet 4.5"},
@@ -1213,7 +1361,6 @@ func TestRenderNormalMode_AllLinesPresent(t *testing.T) {
 		CacheEfficiency: &cache,
 		APIWaitRatio:    &apiRatio,
 		CostPerMinute:   &costPerMin,
-		ResponseSpeed:   &speed,
 	}
 	git := &GitInfo{Branch: "main", Dirty: true}
 	tools := &ToolInfo{
@@ -1221,7 +1368,7 @@ func TestRenderNormalMode_AllLinesPresent(t *testing.T) {
 		Agents: []string{"coder", "tester"},
 	}
 	account := &AccountInfo{EmailAddress: "test@example.com"}
-	usage := &UsageData{RemainingPercent5h: 60.0}
+	usage := &UsageData{FiveHour: &UsageWindow{RemainingPercent: 60.0}}
 
 	cfg := DefaultConfig() // All features enabled
 
@@ -1255,7 +1402,6 @@ func TestRenderDangerMode_Full(t *testing.T) {
 
 	cache := 70
 	costPerMin := 0.25
-	speed := 80
 
 	d := &StdinData{
 		Model: Model{DisplayName: "Claude Opus 4"},
@@ -1274,10 +1420,9 @@ func TestRenderDangerMode_Full(t *testing.T) {
 		ContextPercent:  90,
 		CacheEfficiency: &cache,
 		CostPerMinute:   &costPerMin,
-		ResponseSpeed:   &speed,
 	}
 	git := &GitInfo{Branch: "feature", Dirty: true}
-	usage := &UsageData{RemainingPercent5h: 40.0, RemainingPercent7d: 70.0}
+	usage := &UsageData{FiveHour: &UsageWindow{RemainingPercent: 40.0}, SevenDay: &UsageWindow{RemainingPercent: 70.0}}
 
 	lines := renderDangerMode(RenderContext{Data: d, Metrics: m, Git: git, Usage: usage, Config: Config{Thresholds: DefaultThresholds()}})
 
@@ -1323,9 +1468,6 @@ func TestRenderDangerMode_Full(t *testing.T) {
 	}
 	if !strings.Contains(line2, "C70%") {
 		t.Errorf("L2 missing cache efficiency: %q", line2)
-	}
-	if !strings.Contains(line2, "80tok/s") {
-		t.Errorf("L2 missing speed: %q", line2)
 	}
 	// Cost per hour (0.25 * 60 = 15.0/h)
 	if !strings.Contains(line2, "15.0/h") {
@@ -1395,7 +1537,7 @@ func TestRenderDangerMode_WithQuota(t *testing.T) {
 		Cost:          Cost{TotalDurationMS: 60000},
 	}
 	m := Metrics{ContextPercent: 92}
-	usage := &UsageData{RemainingPercent5h: 15.0, RemainingPercent7d: 80.0}
+	usage := &UsageData{FiveHour: &UsageWindow{RemainingPercent: 15.0}, SevenDay: &UsageWindow{RemainingPercent: 80.0}}
 
 	lines := renderDangerMode(RenderContext{Data: d, Metrics: m, Usage: usage, Config: Config{Thresholds: DefaultThresholds()}})
 
@@ -1558,45 +1700,11 @@ func TestContextColor_CustomThresholds(t *testing.T) {
 	}
 }
 
-func TestRenderResponseSpeed_CustomThresholds(t *testing.T) {
-	t.Parallel()
-
-	customThresholds := DefaultThresholds()
-	customThresholds.SpeedFast = 100
-	customThresholds.SpeedModerate = 50
-
-	tests := []struct {
-		name      string
-		speed     int
-		wantColor string
-	}{
-		{"60 is yellow (below fast=100, above moderate=50)", 60, yellow},
-		{"100 is green (at fast)", 100, green},
-		{"49 is orange (below moderate=50)", 49, orange},
-		{"101 is green (above fast)", 101, green},
-		{"50 is yellow (at moderate)", 50, yellow},
-		{"20 is orange (below moderate)", 20, orange},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := renderResponseSpeed(tt.speed, customThresholds)
-			if !strings.Contains(got, tt.wantColor) {
-				t.Errorf("renderResponseSpeed(%d, custom) missing color %q in %q", tt.speed, tt.wantColor, got)
-			}
-			if !strings.Contains(got, "tok/s") {
-				t.Errorf("renderResponseSpeed(%d, custom) missing 'tok/s' in %q", tt.speed, got)
-			}
-		})
-	}
-}
-
 func TestRender_CustomDangerThreshold(t *testing.T) {
 	t.Parallel()
 
 	cache := 80
 	apiRatio := 35
-	speed := 60
 	d := &StdinData{
 		Model:         Model{DisplayName: "Sonnet"},
 		ContextWindow: ContextWindow{ContextWindowSize: 200000},
@@ -1606,7 +1714,7 @@ func TestRender_CustomDangerThreshold(t *testing.T) {
 	}
 	git := &GitInfo{Branch: "main", Dirty: true}
 	account := &AccountInfo{EmailAddress: "test@example.com"}
-	usage := &UsageData{RemainingPercent5h: 60.0, RemainingPercent7d: 80.0}
+	usage := &UsageData{FiveHour: &UsageWindow{RemainingPercent: 60.0}, SevenDay: &UsageWindow{RemainingPercent: 80.0}}
 	cfg := DefaultConfig()
 	cfg.Thresholds.ContextDanger = 90
 
@@ -1615,7 +1723,6 @@ func TestRender_CustomDangerThreshold(t *testing.T) {
 			ContextPercent:  87,
 			CacheEfficiency: &cache,
 			APIWaitRatio:    &apiRatio,
-			ResponseSpeed:   &speed,
 		}
 		lines := Render(RenderContext{Data: d, Metrics: m, Git: git, Usage: usage, Account: account, Config: cfg})
 
@@ -1848,4 +1955,86 @@ func TestRenderContextBar_CustomThresholdIcons(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestRenderOutputTokens(t *testing.T) {
+	t.Parallel()
+
+	t.Run("nil cu returns empty", func(t *testing.T) {
+		t.Parallel()
+		if got := renderOutputTokens(nil); got != "" {
+			t.Errorf("renderOutputTokens(nil) = %q, want empty", got)
+		}
+	})
+
+	t.Run("zero OutputTokens returns empty", func(t *testing.T) {
+		t.Parallel()
+		cu := &CurrentUsage{OutputTokens: 0}
+		if got := renderOutputTokens(cu); got != "" {
+			t.Errorf("renderOutputTokens(0) = %q, want empty", got)
+		}
+	})
+
+	t.Run("non-zero OutputTokens returns non-empty containing Out:", func(t *testing.T) {
+		t.Parallel()
+		cu := &CurrentUsage{OutputTokens: 1234}
+		got := renderOutputTokens(cu)
+		if got == "" {
+			t.Fatal("renderOutputTokens(1234) = empty, want non-empty")
+		}
+		if !strings.Contains(got, "Out:") {
+			t.Errorf("renderOutputTokens(1234) = %q, want to contain 'Out:'", got)
+		}
+	})
+}
+
+func TestQuotaPaceMarker(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, 6, 15, 12, 0, 0, 0, time.UTC)
+	windowLen := 5 * time.Hour
+
+	t.Run("zero resetsAt returns empty", func(t *testing.T) {
+		t.Parallel()
+		got := quotaPaceMarker(80, time.Time{}, now, windowLen)
+		if got != "" {
+			t.Errorf("quotaPaceMarker(zero resetsAt) = %q, want empty", got)
+		}
+	})
+
+	t.Run("on pace returns empty", func(t *testing.T) {
+		t.Parallel()
+		// 5h window, resetsAt = now+4h => elapsed=1h, remainPct=90, used=10
+		// remainPct*elapsed = 90*3600 = 324000
+		// used*ttr = 10*14400 = 144000
+		// 324000 < 144000 is false => on pace => ""
+		resetsAt := now.Add(4 * time.Hour)
+		got := quotaPaceMarker(90, resetsAt, now, windowLen)
+		if got != "" {
+			t.Errorf("quotaPaceMarker(on pace) = %q, want empty", got)
+		}
+	})
+
+	t.Run("ahead of pace returns fire emoji", func(t *testing.T) {
+		t.Parallel()
+		// 5h window, resetsAt = now+1h => elapsed=4h, remainPct=10, used=90
+		// remainPct*elapsed = 10*14400 = 144000
+		// used*ttr = 90*3600 = 324000
+		// 144000 < 324000 is true => ahead of pace => 🔥
+		resetsAt := now.Add(1 * time.Hour)
+		got := quotaPaceMarker(10, resetsAt, now, windowLen)
+		if !strings.Contains(got, "🔥") {
+			t.Errorf("quotaPaceMarker(ahead of pace) = %q, want to contain '🔥'", got)
+		}
+	})
+
+	t.Run("too early guard returns empty", func(t *testing.T) {
+		t.Parallel()
+		// 5h window, resetsAt = now+4h59m => elapsed=1m < windowLen/20=15m => ""
+		resetsAt := now.Add(4*time.Hour + 59*time.Minute)
+		got := quotaPaceMarker(95, resetsAt, now, windowLen)
+		if got != "" {
+			t.Errorf("quotaPaceMarker(too early) = %q, want empty", got)
+		}
+	})
 }

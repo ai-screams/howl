@@ -13,8 +13,8 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 [![Commit Activity](https://img.shields.io/github/commit-activity/m/ai-screams/howl?logo=github&logoColor=white)](https://github.com/ai-screams/howl/graphs/commit-activity)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/ai-screams/howl/ci.yaml?label=CI&logo=githubactions&logoColor=white)](https://github.com/ai-screams/howl/actions)
-[![Coverage](https://img.shields.io/badge/Coverage-95.2%25-brightgreen?logo=go&logoColor=white)]()
-[![Tests](https://img.shields.io/badge/Tests-129%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
+[![Coverage](https://img.shields.io/badge/Coverage-95.4%25-brightgreen?logo=go&logoColor=white)]()
+[![Tests](https://img.shields.io/badge/Tests-119%20passed-brightgreen?logo=testinglibrary&logoColor=white)]()
 [![Go Report](https://goreportcard.com/badge/github.com/ai-screams/howl)](https://goreportcard.com/report/github.com/ai-screams/howl)
 [![Go Reference](https://pkg.go.dev/badge/github.com/ai-screams/howl.svg)](https://pkg.go.dev/github.com/ai-screams/howl)
 [![Security](https://img.shields.io/badge/govulncheck-passing-brightgreen?logo=go&logoColor=white)]()
@@ -34,7 +34,7 @@ A blazing-fast, feature-rich statusline HUD for [Claude Code](https://code.claud
 
 ![Howl in action](assets/normal.png)
 
-_Real-time statusline HUD showing 1M context session with 13 intelligent metrics_
+_Real-time statusline HUD showing 1M context session with 17 intelligent metrics_
 
 ---
 
@@ -208,13 +208,14 @@ Restart Claude Code to activate the statusline. The HUD will appear at the botto
 
 ## Updating 🔄
 
-### If installed via Plugin
+### If installed via Plugin (automatic)
 
-```bash
-/howl:setup
-```
+The binary keeps itself in sync with the plugin — no manual step needed:
 
-Re-running the setup skill downloads the latest binary and replaces the existing one. Your configuration (`~/.claude/hud/config.json`) is preserved.
+1. Claude Code auto-updates the **plugin** content from the marketplace (enable marketplace auto-update; third-party marketplaces are not auto-updated by default: `claude plugin marketplace update ai-screams-howl`).
+2. The plugin's `SessionStart` hook (`scripts/sync-binary.sh`) detects the new plugin version and re-downloads the matching **binary** in the background.
+
+It is a no-op (no network) when already in sync, only updates an existing install, and never blocks session start. To force an immediate update, re-run `/howl:setup`. Your configuration (`~/.claude/hud/config.json`) is always preserved.
 
 ### If installed via Direct Download
 
@@ -276,9 +277,9 @@ Howl runs automatically as a subprocess every ~300ms. No manual interaction need
 <summary>Text output (for accessibility)</summary>
 
 ```
-🟢 Sonnet 4.5 1M | hanyul.ryu@gmail.com | main | $24.5 | 29h15m
+🟢 Sonnet 4.5 1M | hanyul.ryu@gmail.com | main | Out:1K | $24.5 | 29h15m
 ██░░░░░░░░  21% (210K/  1M) | ████████░░  78% (2h00m/5h) | █████████░  88% (3d21h/7d)
-+328 -67 | Cache 99% (R:180K W:30K) | Wait 6% | $0.01/m | Out:1K | VIM:I | CC 1.0.18
++328 -67 | Cache 99% (R:180K W:30K) | Wait 6% | $0.01/m | VIM:I | CC 1.0.18
 Bash(2)
 ```
 
@@ -376,7 +377,12 @@ howl/
 │   ├── configure/SKILL.md   # /howl:configure (preset selection)
 │   ├── customize/SKILL.md   # /howl:customize (metric toggles)
 │   └── threshold/SKILL.md   # /howl:threshold (color thresholds)
-├── .claude-plugin/          # Claude Code plugin metadata
+├── hooks/
+│   └── hooks.json           # SessionStart hook: binary auto-update
+├── scripts/
+│   ├── install.sh           # Download binary + configure statusLine
+│   └── sync-binary.sh       # Keep binary in sync with plugin version
+├── .claude-plugin/          # Claude Code plugin metadata (plugin.json, marketplace.json)
 ├── Makefile                 # Build automation
 └── go.mod                   # Go module definition
 ```
@@ -552,14 +558,14 @@ Howl was created to solve specific pain points with existing Claude Code statusl
 | Cold start         | ~70ms (Node.js) | ~10ms (Go)                   |
 | Dependencies       | npm ecosystem   | Zero (stdlib only)           |
 | Context display    | % only          | Absolute (500K/1M)           |
-| Metrics count      | 3-5             | 13                           |
+| Metrics count      | 3-5             | 17                           |
 | 1M context support | ❌              | ✅                           |
 | Quota source       | ❌ Missing      | ✅ stdin `rate_limits` field |
 
 ### What Makes Howl Different
 
 - **Zero-latency quota** — Reads `rate_limits` directly from stdin (no network call, no Keychain)
-- **Rich metrics** — 13 distinct indicators across 2-4 display lines
+- **Rich metrics** — 17 distinct indicators across 2-4 display lines
 - **Go performance** — ~10ms cold start, 5.6MB binary, zero dependencies
 - **1M context ready** — Adaptive K/M formatting for large windows
 - **Width-aware rendering** — Tool/agent line adapts to terminal width via `COLUMNS`
@@ -572,7 +578,7 @@ Howl was created to solve specific pain points with existing Claude Code statusl
 
 - [x] Configuration file support (`~/.claude/hud/config.json`) — _Available in v1.3.0+_
 - [x] Auto-sync plugin.json version in release pipeline — _Available in v1.4.0+_
-- [x] Custom thresholds — 17 configurable color breakpoints and danger mode trigger — _Available in v1.5.0+_
+- [x] Custom thresholds — 15 configurable color breakpoints and danger mode trigger — _Available in v1.5.0+_
 - [ ] Custom color schemes
 - [ ] Plugin system for custom metrics
 - [ ] Windows support

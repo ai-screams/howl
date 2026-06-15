@@ -383,8 +383,8 @@ howl/
 
 ### Key Modules
 
-- **constants.go** — Default threshold constants (danger %, cache %, speed, cost, quotas, timeouts)
-- **config.go** — Configuration system with presets, feature toggles, and 17 customizable thresholds
+- **constants.go** — Default threshold constants (danger %, cache %, cost, quotas, timeouts)
+- **config.go** — Configuration system with presets, feature toggles, and 15 customizable thresholds
 - **types.go** — StdinData schema matching Claude Code's JSON output, model tier classification
 - **metrics.go** — Cache efficiency, API ratio, cost velocity calculations
 - **render.go** — ANSI color codes, adaptive layouts (normal 2-4 lines / danger 2 lines), threshold-driven colors

@@ -5,7 +5,7 @@ disable-model-invocation: false
 
 # Howl Threshold
 
-Customize when Howl changes colors and switches modes. All 17 threshold values are configurable — they control when metrics turn green/yellow/orange/red and when danger mode activates.
+Customize when Howl changes colors and switches modes. All 15 threshold values are configurable — they control when metrics turn green/yellow/orange/red and when danger mode activates.
 
 ## Threshold Groups
 
@@ -50,7 +50,7 @@ Only specified thresholds override defaults. Omitted fields keep default values.
 **If "View Current":**
 
 1. Read `~/.claude/hud/config.json` (if exists)
-2. Display all 17 thresholds in a table, marking custom values with `*`
+2. Display all 15 thresholds in a table, marking custom values with `*`
 3. Done.
 
 **If "Reset All":**

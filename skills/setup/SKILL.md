@@ -43,6 +43,27 @@ Inform the user:
 - Statusline configured in `~/.claude/settings.json`
 - **Restart Claude Code** to activate the statusline
 
+## Auto-Update
+
+Once installed, the binary keeps itself current automatically:
+
+- Claude Code auto-updates the **plugin** content (skills, scripts) from the marketplace.
+- The plugin's `SessionStart` hook (`scripts/sync-binary.sh`) then detects a plugin
+  version change and re-downloads the matching **binary** in the background — so the
+  binary never drifts from the plugin. It is a no-op (no network) when already in sync,
+  and only updates an existing install (it never installs unprompted).
+
+To receive updates, ensure marketplace auto-update is enabled for the Howl marketplace
+(third-party marketplaces are not auto-updated by default):
+
+```bash
+# Refresh the marketplace and update installed plugins
+claude plugin marketplace update ai-screams-howl
+```
+
+To force a binary update immediately, just re-run this setup (`/howl:setup`) or
+`bash "${CLAUDE_PLUGIN_ROOT}/scripts/install.sh"`.
+
 ## Troubleshooting
 
 If the install fails:

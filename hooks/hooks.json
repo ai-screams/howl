@@ -1,0 +1,16 @@
+{
+  "description": "Keep the Howl binary in sync with the installed plugin version on session start",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/scripts/sync-binary.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

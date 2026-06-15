@@ -23,13 +23,6 @@ const (
 	// Below 35% = Green: minimal wait time
 )
 
-// Response speed thresholds (tokens/second)
-const (
-	SpeedFast     = 60 // Green: fast response
-	SpeedModerate = 30 // Yellow: moderate speed
-	// Below 30 = Orange: slow response
-)
-
 // Cost velocity thresholds ($/minute)
 const (
 	CostHigh   = 0.50 // Red: expensive session
@@ -56,9 +49,7 @@ const (
 	// Above 75% = Green: plenty remaining
 )
 
-// External operation timeouts and cache TTL
+// External operation timeouts
 const (
-	GitTimeout      = 1 * time.Second  // Git subprocess timeout
-	UsageCacheTTL   = 60 * time.Second // OAuth quota cache duration
-	UsageAPITimeout = 3 * time.Second  // OAuth API request timeout
+	GitTimeout = 1 * time.Second // Git subprocess timeout
 )

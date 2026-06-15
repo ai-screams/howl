@@ -43,8 +43,8 @@ func main() {
 	}
 	git := internal.GetGitInfo(dir)
 
-	// Try to fetch usage quota (optional)
-	usage := internal.GetUsage(data.SessionID)
+	// Quota comes directly from stdin rate_limits (optional, subscriber-only)
+	usage := internal.UsageFromRateLimits(data.RateLimits)
 
 	// Parse transcript for tools/agents (optional)
 	toolInfo := internal.ParseTranscript(data.TranscriptPath)

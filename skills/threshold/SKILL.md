@@ -5,7 +5,7 @@ disable-model-invocation: false
 
 # Howl Threshold
 
-Customize when Howl changes colors and switches modes. All 17 threshold values are configurable — they control when metrics turn green/yellow/orange/red and when danger mode activates.
+Customize when Howl changes colors and switches modes. All 15 threshold values are configurable — they control when metrics turn green/yellow/orange/red and when danger mode activates.
 
 ## Threshold Groups
 
@@ -15,7 +15,6 @@ Customize when Howl changes colors and switches modes. All 17 threshold values a
 | **Session Cost**  | `session_cost_high`, `session_cost_medium`                  | $5.00, $1.00                 | Cost display color                          |
 | **Cache**         | `cache_excellent`, `cache_good`                             | 80%, 50%                     | Cache efficiency color                      |
 | **API Wait**      | `wait_high`, `wait_medium`                                  | 60%, 35%                     | API wait ratio color                        |
-| **Speed**         | `speed_fast`, `speed_moderate`                              | 60, 30 tok/s                 | Response speed color                        |
 | **Cost Velocity** | `cost_velocity_high`, `cost_velocity_medium`                | $0.50, $0.10/min             | Cost velocity color                         |
 | **Quota**         | `quota_critical`, `quota_low`, `quota_medium`, `quota_high` | 10%, 25%, 50%, 75% remaining | Quota color bands                           |
 
@@ -27,7 +26,6 @@ Customize when Howl changes colors and switches modes. All 17 threshold values a
   "thresholds": {
     "context_danger": 90,
     "context_warning": 75,
-    "speed_fast": 100,
     "quota_critical": 5
   }
 }
@@ -52,7 +50,7 @@ Only specified thresholds override defaults. Omitted fields keep default values.
 **If "View Current":**
 
 1. Read `~/.claude/hud/config.json` (if exists)
-2. Display all 17 thresholds in a table, marking custom values with `*`
+2. Display all 15 thresholds in a table, marking custom values with `*`
 3. Done.
 
 **If "Reset All":**
@@ -81,7 +79,7 @@ Only specified thresholds override defaults. Omitted fields keep default values.
 - **Header**: "Select Group"
 - **Options** (4):
   - Label: **"Context & Danger"** | Description: "When danger mode activates (85%) and warning shows (70%)"
-  - Label: **"Performance"** | Description: "Speed (60/30 tok/s), Cache (80/50%), API Wait (60/35%)"
+  - Label: **"Performance"** | Description: "Cache (80/50%), API Wait (60/35%)"
   - Label: **"Cost"** | Description: "Session cost ($5/$1), Cost velocity ($0.50/$0.10/min)"
   - Label: **"Quota"** | Description: "Quota color bands (10/25/50/75% remaining)"
 
@@ -96,7 +94,6 @@ Based on selected group, ask for specific values.
 
 **Performance:**
 
-- Ask: "Set speed thresholds — Fast (green, default 60 tok/s) and Moderate (yellow, default 30 tok/s):"
 - Ask: "Set cache thresholds — Excellent (green, default 80%) and Good (yellow, default 50%):"
 - Ask: "Set API wait thresholds — High (red, default 60%) and Medium (yellow, default 35%):"
 
@@ -158,16 +155,14 @@ User wants danger mode at 90% instead of 85%:
 }
 ```
 
-### Example 2: Stricter Performance Thresholds
+### Example 2: Stricter Cache Thresholds
 
-User wants higher standards for "fast" speed:
+User wants higher standards for cache efficiency:
 
 ```json
 {
   "preset": "developer",
   "thresholds": {
-    "speed_fast": 100,
-    "speed_moderate": 50,
     "cache_excellent": 90,
     "cache_good": 70
   }

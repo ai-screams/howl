@@ -28,8 +28,6 @@ type Thresholds struct {
 	CacheGood          int     `json:"cache_good"`           // Cache % for yellow (default 50)
 	WaitHigh           int     `json:"wait_high"`            // API wait % for red (default 60)
 	WaitMedium         int     `json:"wait_medium"`          // API wait % for yellow (default 35)
-	SpeedFast          int     `json:"speed_fast"`           // tok/s for green (default 60)
-	SpeedModerate      int     `json:"speed_moderate"`       // tok/s for yellow (default 30)
 	CostVelocityHigh   float64 `json:"cost_velocity_high"`   // $/min for red (default 0.50)
 	CostVelocityMedium float64 `json:"cost_velocity_medium"` // $/min for yellow (default 0.10)
 	QuotaCritical      float64 `json:"quota_critical"`       // Remaining % for bold red (default 10)
@@ -43,7 +41,7 @@ type FeatureToggles struct {
 	Account         bool `json:"account"`
 	Git             bool `json:"git"`
 	LineChanges     bool `json:"line_changes"`
-	ResponseSpeed   bool `json:"response_speed"`
+	OutputTokens    bool `json:"output_tokens"`
 	Quota           bool `json:"quota"`
 	Tools           bool `json:"tools"`
 	Agents          bool `json:"agents"`
@@ -52,6 +50,13 @@ type FeatureToggles struct {
 	CostVelocity    bool `json:"cost_velocity"`
 	VimMode         bool `json:"vim_mode"`
 	AgentName       bool `json:"agent_name"`
+	// Optional CC 2.1 field renderers. Off in every preset by default to keep the
+	// normal layout uncluttered — opt in explicitly via config features override.
+	Effort      bool `json:"effort"`
+	Thinking    bool `json:"thinking"`
+	SessionName bool `json:"session_name"`
+	PullRequest bool `json:"pull_request"`
+	Worktree    bool `json:"worktree"`
 }
 
 var presets = map[string]FeatureToggles{
@@ -59,7 +64,7 @@ var presets = map[string]FeatureToggles{
 		Account:         true,
 		Git:             true,
 		LineChanges:     true,
-		ResponseSpeed:   true,
+		OutputTokens:    true,
 		Quota:           true,
 		Tools:           true,
 		Agents:          true,
@@ -74,7 +79,7 @@ var presets = map[string]FeatureToggles{
 		Account:         true,
 		Git:             true,
 		LineChanges:     true,
-		ResponseSpeed:   true,
+		OutputTokens:    true,
 		Quota:           true,
 		Tools:           true,
 		Agents:          true,
@@ -82,16 +87,16 @@ var presets = map[string]FeatureToggles{
 		VimMode:         true,
 	},
 	"cost-focused": {
-		Account:       true,
-		ResponseSpeed: true,
-		Quota:         true,
-		APIWaitRatio:  true,
-		CostVelocity:  true,
+		Account:      true,
+		OutputTokens: true,
+		Quota:        true,
+		APIWaitRatio: true,
+		CostVelocity: true,
 	},
 }
 
 // mergeFeatures merges override into base. If override field is true, it overrides base.
-// If override field is false, base value is preserved (no reflection, explicit for all 12 fields).
+// If override field is false, base value is preserved (no reflection, explicit per field).
 func mergeFeatures(base, override FeatureToggles) FeatureToggles {
 	result := base
 	if override.Account {
@@ -103,8 +108,8 @@ func mergeFeatures(base, override FeatureToggles) FeatureToggles {
 	if override.LineChanges {
 		result.LineChanges = true
 	}
-	if override.ResponseSpeed {
-		result.ResponseSpeed = true
+	if override.OutputTokens {
+		result.OutputTokens = true
 	}
 	if override.Quota {
 		result.Quota = true
@@ -130,6 +135,21 @@ func mergeFeatures(base, override FeatureToggles) FeatureToggles {
 	if override.AgentName {
 		result.AgentName = true
 	}
+	if override.Effort {
+		result.Effort = true
+	}
+	if override.Thinking {
+		result.Thinking = true
+	}
+	if override.SessionName {
+		result.SessionName = true
+	}
+	if override.PullRequest {
+		result.PullRequest = true
+	}
+	if override.Worktree {
+		result.Worktree = true
+	}
 	return result
 }
 
@@ -145,8 +165,6 @@ func DefaultThresholds() Thresholds {
 		CacheGood:          CacheGood,
 		WaitHigh:           WaitHigh,
 		WaitMedium:         WaitMedium,
-		SpeedFast:          SpeedFast,
-		SpeedModerate:      SpeedModerate,
 		CostVelocityHigh:   CostHigh,
 		CostVelocityMedium: CostMedium,
 		QuotaCritical:      QuotaCritical,
@@ -187,12 +205,6 @@ func mergeThresholds(base, override Thresholds) Thresholds {
 	if override.WaitMedium > 0 {
 		result.WaitMedium = override.WaitMedium
 	}
-	if override.SpeedFast > 0 {
-		result.SpeedFast = override.SpeedFast
-	}
-	if override.SpeedModerate > 0 {
-		result.SpeedModerate = override.SpeedModerate
-	}
 	if override.CostVelocityHigh > 0 {
 		result.CostVelocityHigh = override.CostVelocityHigh
 	}
@@ -227,10 +239,6 @@ func validateThresholds(t *Thresholds) {
 	t.WaitHigh = max(0, min(t.WaitHigh, 100))
 	t.WaitMedium = max(0, min(t.WaitMedium, 100))
 
-	// Speed: fast minimum 2 (to allow moderate >= 1), moderate minimum 1
-	t.SpeedFast = max(2, t.SpeedFast)
-	t.SpeedModerate = max(1, t.SpeedModerate)
-
 	// Cost: minimum 0.01
 	t.SessionCostHigh = max(0.01, t.SessionCostHigh)
 	t.SessionCostMedium = max(0.01, t.SessionCostMedium)
@@ -260,9 +268,6 @@ func validateThresholds(t *Thresholds) {
 	// API wait: high > medium
 	t.WaitMedium = max(0, min(t.WaitMedium, t.WaitHigh-1))
 
-	// Speed: fast > moderate
-	t.SpeedModerate = max(1, min(t.SpeedModerate, t.SpeedFast-1))
-
 	// Cost velocity: high > medium
 	if t.CostVelocityMedium >= t.CostVelocityHigh {
 		t.CostVelocityMedium = max(0.01, t.CostVelocityHigh*0.5)
@@ -278,7 +283,6 @@ func validateThresholds(t *Thresholds) {
 	t.ContextModerate = max(0, min(t.ContextModerate, 100))
 	t.CacheGood = max(0, min(t.CacheGood, 100))
 	t.WaitMedium = max(0, min(t.WaitMedium, 100))
-	t.SpeedModerate = max(1, t.SpeedModerate)
 	t.SessionCostMedium = max(0.01, t.SessionCostMedium)
 	t.CostVelocityMedium = max(0.01, t.CostVelocityMedium)
 	t.QuotaLow = max(0, min(t.QuotaLow, 100))

@@ -431,118 +431,6 @@ func TestCalcCostPerMinute(t *testing.T) {
 	}
 }
 
-func TestCalcResponseSpeed(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name string
-		cost *Cost
-		cw   *ContextWindow
-		want *int
-	}{
-		{
-			name: "normal calculation",
-			cost: &Cost{
-				TotalAPIDurationMS: 5000, // 5 seconds
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 100,
-			},
-			want: intPtr(20), // 100 / 5.0 = 20 tok/s
-		},
-		{
-			name: "TotalAPIDurationMS zero returns nil",
-			cost: &Cost{
-				TotalAPIDurationMS: 0,
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 100,
-			},
-			want: nil,
-		},
-		{
-			name: "TotalOutputTokens zero returns nil",
-			cost: &Cost{
-				TotalAPIDurationMS: 5000,
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 0,
-			},
-			want: nil,
-		},
-		{
-			name: "both zero returns nil",
-			cost: &Cost{
-				TotalAPIDurationMS: 0,
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 0,
-			},
-			want: nil,
-		},
-		{
-			name: "large values",
-			cost: &Cost{
-				TotalAPIDurationMS: 10000, // 10 seconds
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 500,
-			},
-			want: intPtr(50), // 500 / 10.0 = 50 tok/s
-		},
-		{
-			name: "fast response (100 tok/s)",
-			cost: &Cost{
-				TotalAPIDurationMS: 1000, // 1 second
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 100,
-			},
-			want: intPtr(100),
-		},
-		{
-			name: "slow response (1 tok/s)",
-			cost: &Cost{
-				TotalAPIDurationMS: 10000, // 10 seconds
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 10,
-			},
-			want: intPtr(1),
-		},
-		{
-			name: "truncation test (fractional tok/s)",
-			cost: &Cost{
-				TotalAPIDurationMS: 3000, // 3 seconds
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 100,
-			},
-			want: intPtr(33), // 100 / 3.0 = 33.333... → 33
-		},
-		{
-			name: "very fast (sub-second)",
-			cost: &Cost{
-				TotalAPIDurationMS: 500, // 0.5 seconds
-			},
-			cw: &ContextWindow{
-				TotalOutputTokens: 100,
-			},
-			want: intPtr(200), // 100 / 0.5 = 200 tok/s
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got := calcResponseSpeed(tt.cost, tt.cw)
-			if !intPtrEq(got, tt.want) {
-				t.Errorf("calcResponseSpeed() = %s, want %s", ptrIntToString(got), ptrIntToString(tt.want))
-			}
-		})
-	}
-}
-
 func TestComputeMetrics(t *testing.T) {
 	t.Parallel()
 
@@ -575,7 +463,6 @@ func TestComputeMetrics(t *testing.T) {
 				CacheEfficiency: intPtr(50),    // 15000*100/(10000+5000+15000) = 50
 				APIWaitRatio:    intPtr(4),     // 5000*100/120000 = 4
 				CostPerMinute:   floatPtr(1.2), // 2.4 / 2 = 1.2
-				ResponseSpeed:   intPtr(20),    // 100 / 5.0 = 20
 			},
 		},
 		{
@@ -598,7 +485,6 @@ func TestComputeMetrics(t *testing.T) {
 				CacheEfficiency: nil,       // CurrentUsage is nil
 				APIWaitRatio:    intPtr(0), // 0 API duration
 				CostPerMinute:   nil,       // < 60000ms
-				ResponseSpeed:   nil,       // API duration is 0
 			},
 		},
 		{
@@ -621,7 +507,6 @@ func TestComputeMetrics(t *testing.T) {
 				CacheEfficiency: nil,
 				APIWaitRatio:    nil,
 				CostPerMinute:   nil,
-				ResponseSpeed:   nil,
 			},
 		},
 		{
@@ -648,7 +533,6 @@ func TestComputeMetrics(t *testing.T) {
 				CacheEfficiency: intPtr(77),    // 135000*100/(30000+10000+135000) ≈ 77
 				APIWaitRatio:    intPtr(15),    // 45000*100/300000 = 15
 				CostPerMinute:   floatPtr(3.0), // 15.0 / 5 = 3.0
-				ResponseSpeed:   intPtr(11),    // 500 / 45.0 ≈ 11
 			},
 		},
 		{
@@ -675,7 +559,6 @@ func TestComputeMetrics(t *testing.T) {
 				CacheEfficiency: intPtr(100),   // only cache_read
 				APIWaitRatio:    intPtr(100),   // 100% API time
 				CostPerMinute:   floatPtr(5.0), // 5.0 / 1 = 5.0
-				ResponseSpeed:   intPtr(2),     // 120 / 60.0 = 2
 			},
 		},
 	}
@@ -697,9 +580,6 @@ func TestComputeMetrics(t *testing.T) {
 			}
 			if !floatPtrEq(got.CostPerMinute, tt.want.CostPerMinute) {
 				t.Errorf("CostPerMinute = %v, want %v", ptrFloatToString(got.CostPerMinute), ptrFloatToString(tt.want.CostPerMinute))
-			}
-			if !intPtrEq(got.ResponseSpeed, tt.want.ResponseSpeed) {
-				t.Errorf("ResponseSpeed = %v, want %v", ptrIntToString(got.ResponseSpeed), ptrIntToString(tt.want.ResponseSpeed))
 			}
 		})
 	}

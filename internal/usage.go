@@ -1,183 +1,45 @@
 package internal
 
-import (
-	"context"
-	"encoding/json"
-	"io"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"time"
-)
+import "time"
 
-// UsageData represents the OAuth API usage quota with 5-hour and 7-day limits.
+// UsageWindow is the render model for a single rate-limit window. Presence is
+// signalled by a non-nil pointer — zero is a valid quota state, never "absent".
+type UsageWindow struct {
+	RemainingPercent float64
+	ResetsAt         time.Time
+}
+
+// UsageData holds quota for display. Each window is independently optional,
+// matching the Claude Code `rate_limits` contract.
 type UsageData struct {
-	RemainingPercent5h float64   `json:"remaining_percent_5h"`
-	RemainingPercent7d float64   `json:"remaining_percent_7d"`
-	ResetsAt5h         time.Time `json:"resets_at_5h"`
-	ResetsAt7d         time.Time `json:"resets_at_7d"`
-	FetchedAt          int64     `json:"fetched_at"`
+	FiveHour *UsageWindow
+	SevenDay *UsageWindow
 }
 
-type usageAPIResponse struct {
-	FiveHour struct {
-		Utilization float64 `json:"utilization"`
-		ResetsAt    string  `json:"resets_at"`
-	} `json:"five_hour"`
-	SevenDay struct {
-		Utilization float64 `json:"utilization"`
-		ResetsAt    string  `json:"resets_at"`
-	} `json:"seven_day"`
-}
-
-// usageAPIURL is the OAuth usage API endpoint. Package-level var for test substitution.
-var usageAPIURL = "https://api.anthropic.com/api/oauth/usage"
-
-// getOAuthTokenFunc returns the OAuth token. Package-level var for test substitution.
-var getOAuthTokenFunc = getOAuthToken
-
-const (
-	cacheTTL   = UsageCacheTTL
-	apiTimeout = UsageAPITimeout
-)
-
-// GetUsage fetches OAuth usage data with session-scoped caching.
-// Returns nil on any failure — usage quota is optional.
-func GetUsage(sessionID string) *UsageData {
-	if sessionID == "" {
+// UsageFromRateLimits converts the stdin `rate_limits` object into the render
+// model. Pure function — no network, cache, or Keychain. Returns nil when no
+// quota data is available so the renderer omits the section.
+func UsageFromRateLimits(rl *RateLimits) *UsageData {
+	if rl == nil {
 		return nil
 	}
-
-	// Try cache first
-	if cached := loadCachedUsage(sessionID); cached != nil {
-		if time.Since(time.Unix(cached.FetchedAt, 0)) < cacheTTL {
-			return cached
-		}
-	}
-
-	// Fetch fresh data
-	token := getOAuthTokenFunc()
-	if token == "" {
-		return nil
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, "GET", usageAPIURL, nil)
-	if err != nil {
-		return nil
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("anthropic-beta", "oauth-2025-04-20")
-	req.Header.Set("User-Agent", "howl/1.0")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != 200 {
-		return nil
-	}
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20)) // 1MB max
-	if err != nil {
-		return nil
-	}
-
-	var apiResp usageAPIResponse
-	if err := json.Unmarshal(body, &apiResp); err != nil {
-		return nil
-	}
-
-	// Parse reset times
-	resetTime5h, _ := time.Parse(time.RFC3339, apiResp.FiveHour.ResetsAt)
-	resetTime7d, _ := time.Parse(time.RFC3339, apiResp.SevenDay.ResetsAt)
-
-	// Convert utilization to remaining percentage
-	// API returns utilization (used %), we want remaining %
 	usage := &UsageData{
-		RemainingPercent5h: 100 - apiResp.FiveHour.Utilization,
-		RemainingPercent7d: 100 - apiResp.SevenDay.Utilization,
-		ResetsAt5h:         resetTime5h,
-		ResetsAt7d:         resetTime7d,
-		FetchedAt:          time.Now().Unix(),
+		FiveHour: usageWindowFromRateLimit(rl.FiveHour),
+		SevenDay: usageWindowFromRateLimit(rl.SevenDay),
 	}
-
-	// Cache it
-	saveCachedUsage(sessionID, usage)
+	if usage.FiveHour == nil && usage.SevenDay == nil {
+		return nil
+	}
 	return usage
 }
 
-func getOAuthToken() string {
-	ctx, cancel := context.WithTimeout(context.Background(), apiTimeout)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "/usr/bin/security", "find-generic-password",
-		"-s", "Claude Code-credentials",
-		"-w")
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
-	}
-
-	// Extract accessToken via regex. The Keychain stores all Claude Code
-	// credentials in one large JSON blob that may exceed the ~2KB output
-	// limit of `security -w`, producing truncated (unparseable) JSON.
-	// Regex extraction is robust against truncation since the token appears
-	// near the start of the blob.
-	return extractAccessToken(out)
-}
-
-func sanitizeSessionID(sessionID string) string {
-	return filepath.Base(sessionID)
-}
-
-func cacheDir(sessionID string) string {
-	return filepath.Join(os.TempDir(), "howl-"+sanitizeSessionID(sessionID))
-}
-
-func cachePath(sessionID string) string {
-	return filepath.Join(cacheDir(sessionID), "usage.json")
-}
-
-func loadCachedUsage(sessionID string) *UsageData {
-	path := cachePath(sessionID)
-	data, err := os.ReadFile(path)
-	if err != nil {
+func usageWindowFromRateLimit(w *RateLimitWindow) *UsageWindow {
+	if w == nil {
 		return nil
 	}
-	var usage UsageData
-	if err := json.Unmarshal(data, &usage); err != nil {
-		return nil
+	used := min(max(w.UsedPercentage, 0), 100) // contract is 0-100; clamp defensively
+	return &UsageWindow{
+		RemainingPercent: 100 - used,
+		ResetsAt:         time.Unix(w.ResetsAt, 0),
 	}
-	return &usage
-}
-
-func saveCachedUsage(sessionID string, usage *UsageData) {
-	dir := cacheDir(sessionID)
-	if err := os.MkdirAll(dir, 0700); err != nil {
-		return
-	}
-	data, err := json.Marshal(usage)
-	if err != nil {
-		return
-	}
-	_ = os.WriteFile(cachePath(sessionID), data, 0600)
-}
-
-// accessTokenRe matches "accessToken":"<value>" in JSON, tolerating truncated blobs.
-var accessTokenRe = regexp.MustCompile(`"accessToken"\s*:\s*"([^"]+)"`)
-
-// extractAccessToken pulls the OAuth access token from a potentially truncated
-// Keychain JSON blob using regex instead of json.Unmarshal.
-func extractAccessToken(data []byte) string {
-	m := accessTokenRe.FindSubmatch(data)
-	if m == nil {
-		return ""
-	}
-	return string(m[1])
 }

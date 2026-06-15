@@ -9,12 +9,12 @@ Help the user choose a display preset for their Howl statusline HUD.
 
 ## Available Presets
 
-| Preset           | Lines | Best For            | Displays                                        |
-| ---------------- | ----- | ------------------- | ----------------------------------------------- |
-| **full**         | 2-4   | Complete visibility | All 13 metrics (default)                        |
-| **minimal**      | 1     | Clean workspace     | Model + Context + Cost + Duration               |
-| **developer**    | 2     | Coding focus        | + Account + Git + Changes + Speed + Cache + Vim |
-| **cost-focused** | 2     | Budget tracking     | + Quota + API Wait + Cost Velocity              |
+| Preset           | Lines | Best For            | Displays                                |
+| ---------------- | ----- | ------------------- | --------------------------------------- |
+| **full**         | 2-4   | Complete visibility | All metrics (default)                   |
+| **minimal**      | 1     | Clean workspace     | Model + Context + Cost + Duration       |
+| **developer**    | 2     | Coding focus        | + Account + Git + Changes + Cache + Vim |
+| **cost-focused** | 2     | Budget tracking     | + Quota + API Wait + Cost Velocity      |
 
 ## Process
 
@@ -23,9 +23,9 @@ Help the user choose a display preset for their Howl statusline HUD.
    - Question: "Which Howl statusline preset would you like to use?"
    - Header: "Display Preset"
    - Options (4):
-     - Label: "full (default)" | Description: "Complete visibility - All 13 metrics (2-4 lines)"
+     - Label: "full (default)" | Description: "Complete visibility - All metrics (2-4 lines)"
      - Label: "minimal" | Description: "Clean workspace - Model + Context + Cost + Duration only (1 line)"
-     - Label: "developer" | Description: "Coding focus - Add Account, Git, Changes, Speed, Cache, Vim (2 lines)"
+     - Label: "developer" | Description: "Coding focus - Add Account, Git, Changes, Cache, Vim (2 lines)"
      - Label: "cost-focused" | Description: "Budget tracking - Add Quota, API Wait, Cost Velocity (2 lines)"
 
 2. **Show a preview** of their chosen preset:
@@ -40,7 +40,7 @@ Help the user choose a display preset for their Howl statusline HUD.
 
    ```
    [Sonnet 4.5] | ████░░░░░░░░░░░░░░░░ 21% (210K/1M) | $32.7 | 2h46m
-   user@example.com | main* | +2.7K/-120 | 50tok/s | Cache:96% | I
+   user@example.com | main* | +2.7K/-120 | Cache:96% | I
    ```
 
    **cost-focused:**
@@ -54,7 +54,7 @@ Help the user choose a display preset for their Howl statusline HUD.
 
    ```
    [Sonnet 4.5] | ████░░░░░░░░░░░░░░░░ 21% (210K/1M) | $32.7 | 2h46m
-   user@example.com | main* | +2.7K/-120 | 50tok/s | (2h)5h: 55%/42% :7d(3d6h)
+   user@example.com | main* | +2.7K/-120 | (2h)5h: 55%/42% :7d(3d6h)
    Read(9) Bash(8) TaskCreate(4) | ▶researcher,tester
    Cache:96% | Wait:41% | Cost:$0.19/m | I | @code-wri
    ```
@@ -107,9 +107,9 @@ This behavior cannot be disabled - it's a safety feature. The trigger point can 
 
 ### What Gets Hidden in Each Preset
 
-- **minimal**: Hides account, git, line changes, response speed, quota, tools, agents, cache, API wait ratio, cost velocity, vim mode, agent name, token breakdown
+- **minimal**: Hides account, git, line changes, quota, tools, agents, cache, API wait ratio, cost velocity, vim mode, agent name, token breakdown
 - **developer**: Hides quota, tools, agents, API wait ratio, cost velocity, agent name, token breakdown
-- **cost-focused**: Hides account, git, line changes, response speed, tools, agents, cache, vim mode, agent name, token breakdown
+- **cost-focused**: Hides account, git, line changes, tools, agents, cache, vim mode, agent name, token breakdown
 
 ### Refresh Rate
 
@@ -121,7 +121,7 @@ Configuration changes apply on the next statusline refresh, which occurs approxi
 User: I want a cleaner statusline
 Agent: I can help configure that! What's your priority?
 - Minimal (just essentials: model, context, cost, time)
-- Developer focus (+ git, changes, speed, cache)
+- Developer focus (+ git, changes, cache)
 - Cost tracking (+ quota, API wait, velocity)
 
 User: Minimal please

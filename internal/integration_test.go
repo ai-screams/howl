@@ -345,11 +345,8 @@ func TestIntegration_NormalMode(t *testing.T) {
 			json: jsonNormalSession,
 			cfg:  PresetConfig("full"),
 			usage: &UsageData{
-				RemainingPercent5h: 80.0,
-				RemainingPercent7d: 90.0,
-				ResetsAt5h:         futureTime,
-				ResetsAt7d:         futureTime.Add(48 * time.Hour),
-				FetchedAt:          time.Now().Unix(),
+				FiveHour: &UsageWindow{RemainingPercent: 80.0, ResetsAt: futureTime},
+				SevenDay: &UsageWindow{RemainingPercent: 90.0, ResetsAt: futureTime.Add(48 * time.Hour)},
 			},
 			wantMinLines: 2,
 			wantMaxLines: 4,
@@ -488,11 +485,8 @@ func TestIntegration_DangerMode(t *testing.T) {
 				Dirty:  false,
 			},
 			usage: &UsageData{
-				RemainingPercent5h: 25.0,
-				RemainingPercent7d: 40.0,
-				ResetsAt5h:         futureTime,
-				ResetsAt7d:         futureTime.Add(72 * time.Hour),
-				FetchedAt:          time.Now().Unix(),
+				FiveHour: &UsageWindow{RemainingPercent: 25.0, ResetsAt: futureTime},
+				SevenDay: &UsageWindow{RemainingPercent: 40.0, ResetsAt: futureTime.Add(72 * time.Hour)},
 			},
 			wantContains: []string{
 				"🔴",
@@ -630,7 +624,6 @@ func TestIntegration_MetricsComputedFromJSON(t *testing.T) {
 		json                    string
 		wantContextPercent      int
 		wantCacheEfficiencyMin  *int
-		wantResponseSpeedMin    *int
 		wantCostPerMinuteExists bool
 	}{
 		{
@@ -639,10 +632,6 @@ func TestIntegration_MetricsComputedFromJSON(t *testing.T) {
 			wantContextPercent: 42,
 			wantCacheEfficiencyMin: func() *int {
 				v := 30 // At least 30% cache efficiency
-				return &v
-			}(),
-			wantResponseSpeedMin: func() *int {
-				v := 120 // 8000 output tokens / 60s = 133 tok/s
 				return &v
 			}(),
 			wantCostPerMinuteExists: true,
@@ -655,10 +644,6 @@ func TestIntegration_MetricsComputedFromJSON(t *testing.T) {
 				v := 42 // 8000 cache / (10000 + 1000 + 8000) = 42%
 				return &v
 			}(),
-			wantResponseSpeedMin: func() *int {
-				v := 90 // 20000 output tokens / 200s = 100 tok/s
-				return &v
-			}(),
 			wantCostPerMinuteExists: true,
 		},
 		{
@@ -666,7 +651,6 @@ func TestIntegration_MetricsComputedFromJSON(t *testing.T) {
 			json:                    jsonFreshSession,
 			wantContextPercent:      0,
 			wantCacheEfficiencyMin:  nil,
-			wantResponseSpeedMin:    nil,
 			wantCostPerMinuteExists: false,
 		},
 		{
@@ -675,10 +659,6 @@ func TestIntegration_MetricsComputedFromJSON(t *testing.T) {
 			wantContextPercent: 85,
 			wantCacheEfficiencyMin: func() *int {
 				v := 25 // 5000 cache / (10000 + 5000 + 5000) = 25%
-				return &v
-			}(),
-			wantResponseSpeedMin: func() *int {
-				v := 9 // 1000 output / 100s = 10 tok/s
 				return &v
 			}(),
 			wantCostPerMinuteExists: true,
@@ -711,19 +691,6 @@ func TestIntegration_MetricsComputedFromJSON(t *testing.T) {
 			} else {
 				if m.CacheEfficiency != nil {
 					t.Errorf("CacheEfficiency: got %d, want nil", *m.CacheEfficiency)
-				}
-			}
-
-			// Verify response speed
-			if tt.wantResponseSpeedMin != nil {
-				if m.ResponseSpeed == nil {
-					t.Errorf("ResponseSpeed: got nil, want >= %d", *tt.wantResponseSpeedMin)
-				} else if *m.ResponseSpeed < *tt.wantResponseSpeedMin {
-					t.Errorf("ResponseSpeed: got %d, want >= %d", *m.ResponseSpeed, *tt.wantResponseSpeedMin)
-				}
-			} else {
-				if m.ResponseSpeed != nil {
-					t.Errorf("ResponseSpeed: got %d, want nil", *m.ResponseSpeed)
 				}
 			}
 
@@ -774,21 +741,17 @@ func TestIntegration_PriorityOrdering(t *testing.T) {
 	cfg := Config{
 		Preset: "full",
 		Features: FeatureToggles{
-			Account:       true,
-			Git:           true,
-			LineChanges:   true,
-			ResponseSpeed: true,
-			Quota:         true,
+			Account:     true,
+			Git:         true,
+			LineChanges: true,
+			Quota:       true,
 		},
 	}
 
 	git := &GitInfo{Branch: "feature", Dirty: false}
 	usage := &UsageData{
-		RemainingPercent5h: 80.0,
-		RemainingPercent7d: 90.0,
-		ResetsAt5h:         futureTime,
-		ResetsAt7d:         futureTime.Add(48 * time.Hour),
-		FetchedAt:          time.Now().Unix(),
+		FiveHour: &UsageWindow{RemainingPercent: 80.0, ResetsAt: futureTime},
+		SevenDay: &UsageWindow{RemainingPercent: 90.0, ResetsAt: futureTime.Add(48 * time.Hour)},
 	}
 	account := &AccountInfo{EmailAddress: "test@example.com"}
 
@@ -859,7 +822,7 @@ func TestIntegration_CustomThresholds(t *testing.T) {
 	customCfg.Thresholds.ContextWarning = 80
 
 	git := &GitInfo{Branch: "main", Dirty: true}
-	usage := &UsageData{RemainingPercent5h: 60.0, RemainingPercent7d: 80.0}
+	usage := &UsageData{FiveHour: &UsageWindow{RemainingPercent: 60.0}, SevenDay: &UsageWindow{RemainingPercent: 80.0}}
 	normalLines := Render(RenderContext{Data: &d, Metrics: m, Git: git, Usage: usage, Config: customCfg})
 
 	if len(normalLines) <= 2 {

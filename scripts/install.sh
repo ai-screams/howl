@@ -95,50 +95,73 @@ mv "$TMPDIR_DL/$ASSET_NAME" "$INSTALL_DIR/$BINARY"
 chmod +x "$INSTALL_DIR/$BINARY"
 echo "  Binary installed: $INSTALL_DIR/$BINARY"
 
-# Configure statusline in settings.json
+# Configure statusline in settings.json.
+# Modern statusLine block (Claude Code 2.1):
+#   - refreshInterval: re-run when idle (time-based metrics, quota countdowns)
+#   - hideVimModeIndicator: Howl renders vim.mode itself, so suppress the native one
 configure_settings() {
   local cmd="$INSTALL_DIR/$BINARY"
 
+  # No settings file -> create the full modern block.
   if [ ! -f "$SETTINGS" ]; then
     mkdir -p "$(dirname "$SETTINGS")"
-    printf '{\n  "statusLine": {\n    "type": "command",\n    "command": "%s"\n  }\n}\n' "$cmd" > "$SETTINGS"
+    printf '{\n  "statusLine": {\n    "type": "command",\n    "command": "%s",\n    "refreshInterval": 10,\n    "hideVimModeIndicator": true\n  }\n}\n' "$cmd" > "$SETTINGS"
     echo "  Created $SETTINGS"
     return
   fi
 
-  # Check if statusLine already configured
-  if grep -q '"statusLine"' "$SETTINGS" 2>/dev/null; then
-    echo "  statusLine already configured in $SETTINGS"
-    echo "  Verify it points to: $cmd"
+  # Existing settings: a JSON tool is required to patch safely.
+  if command -v jq &>/dev/null; then
+    local existing
+    existing=$(jq -r '.statusLine.command // empty' "$SETTINGS" 2>/dev/null)
+    if [ -n "$existing" ] && ! printf '%s' "$existing" | grep -q 'howl'; then
+      echo "  Existing non-Howl statusLine detected: $existing"
+      echo "  Leaving it untouched. To use Howl, set statusLine.command to: $cmd"
+      return
+    fi
+    cp "$SETTINGS" "$SETTINGS.bak"
+    # Set/repoint to Howl and add modern fields, preserving any user-set values.
+    jq --arg cmd "$cmd" '.statusLine = {
+        "type": "command",
+        "command": $cmd,
+        "refreshInterval": (.statusLine.refreshInterval // 10),
+        "hideVimModeIndicator": (.statusLine.hideVimModeIndicator // true)
+      }' "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
+    echo "  Statusline configured in $SETTINGS"
     return
   fi
 
-  # Backup before modifying
-  cp "$SETTINGS" "$SETTINGS.bak"
-
-  # Append statusLine to existing settings using available JSON tool
-  if command -v jq &>/dev/null; then
-    jq --arg cmd "$cmd" '.statusLine = {"type": "command", "command": $cmd}' \
-      "$SETTINGS" > "$SETTINGS.tmp" && mv "$SETTINGS.tmp" "$SETTINGS"
-  elif command -v python3 &>/dev/null; then
+  if command -v python3 &>/dev/null; then
+    cp "$SETTINGS" "$SETTINGS.bak"
     HOWL_SETTINGS_PATH="$SETTINGS" HOWL_BINARY_PATH="$cmd" python3 -c "
-import json, os
-settings_path = os.environ['HOWL_SETTINGS_PATH']
-binary_path = os.environ['HOWL_BINARY_PATH']
-with open(settings_path) as f:
+import json, os, sys
+path = os.environ['HOWL_SETTINGS_PATH']
+cmd = os.environ['HOWL_BINARY_PATH']
+with open(path) as f:
     d = json.load(f)
-d['statusLine'] = {'type': 'command', 'command': binary_path}
-with open(settings_path, 'w') as f:
+sl = d.get('statusLine') or {}
+existing = sl.get('command', '')
+if existing and 'howl' not in existing:
+    print('  Existing non-Howl statusLine detected: ' + existing)
+    print('  Leaving it untouched. To use Howl, set statusLine.command to: ' + cmd)
+    sys.exit(0)
+d['statusLine'] = {
+    'type': 'command',
+    'command': cmd,
+    'refreshInterval': sl.get('refreshInterval', 10),
+    'hideVimModeIndicator': sl.get('hideVimModeIndicator', True),
+}
+with open(path, 'w') as f:
     json.dump(d, f, indent=2)
     f.write('\n')
+print('  Statusline configured in ' + path)
 "
-  else
-    echo "  Warning: Neither jq nor python3 found."
-    echo "  Add manually to $SETTINGS:"
-    echo "    \"statusLine\": {\"type\": \"command\", \"command\": \"$cmd\"}"
     return
   fi
-  echo "  Statusline configured in $SETTINGS"
+
+  echo "  Warning: Neither jq nor python3 found."
+  echo "  Add manually to $SETTINGS:"
+  echo "    \"statusLine\": {\"type\": \"command\", \"command\": \"$cmd\", \"refreshInterval\": 10, \"hideVimModeIndicator\": true}"
 }
 
 configure_settings

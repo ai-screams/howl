@@ -6,7 +6,6 @@ type Metrics struct {
 	CacheEfficiency *int // nil if insufficient data
 	APIWaitRatio    *int // nil if duration=0
 	CostPerMinute   *float64
-	ResponseSpeed   *int // tokens/sec output speed
 }
 
 // ComputeMetrics calculates derived KPIs from raw session data.
@@ -20,7 +19,6 @@ func ComputeMetrics(d *StdinData) Metrics {
 	}
 	m.APIWaitRatio = calcAPIWaitRatio(&d.Cost)
 	m.CostPerMinute = calcCostPerMinute(&d.Cost)
-	m.ResponseSpeed = calcResponseSpeed(&d.Cost, &d.ContextWindow)
 	return m
 }
 
@@ -68,15 +66,5 @@ func calcCostPerMinute(c *Cost) *float64 {
 	}
 	minutes := float64(c.TotalDurationMS) / msPerMinute
 	v := c.TotalCostUSD / minutes
-	return &v
-}
-
-func calcResponseSpeed(c *Cost, cw *ContextWindow) *int {
-	if c.TotalAPIDurationMS == 0 || cw.TotalOutputTokens == 0 {
-		return nil
-	}
-	seconds := float64(c.TotalAPIDurationMS) / 1000.0
-	speed := float64(cw.TotalOutputTokens) / seconds
-	v := int(speed)
 	return &v
 }

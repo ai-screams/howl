@@ -243,7 +243,7 @@ func TestMergeFeatures_Override(t *testing.T) {
 func TestMergeFeatures_AllTrue(t *testing.T) {
 	base := FeatureToggles{Account: false}
 	override := FeatureToggles{
-		Account: true, Git: true, LineChanges: true, ResponseSpeed: true,
+		Account: true, Git: true, LineChanges: true, OutputTokens: true,
 		Quota: true, Tools: true, Agents: true, CacheEfficiency: true,
 		APIWaitRatio: true, CostVelocity: true, VimMode: true, AgentName: true,
 	}
@@ -314,12 +314,6 @@ func TestDefaultThresholds(t *testing.T) {
 	if th.WaitMedium != WaitMedium {
 		t.Errorf("WaitMedium: expected %d, got %d", WaitMedium, th.WaitMedium)
 	}
-	if th.SpeedFast != SpeedFast {
-		t.Errorf("SpeedFast: expected %d, got %d", SpeedFast, th.SpeedFast)
-	}
-	if th.SpeedModerate != SpeedModerate {
-		t.Errorf("SpeedModerate: expected %d, got %d", SpeedModerate, th.SpeedModerate)
-	}
 	if th.CostVelocityHigh != CostHigh {
 		t.Errorf("CostVelocityHigh: expected %.2f, got %.2f", CostHigh, th.CostVelocityHigh)
 	}
@@ -350,9 +344,6 @@ func TestMergeThresholds_AllZero(t *testing.T) {
 	if result.ContextDanger != DangerThreshold {
 		t.Errorf("ContextDanger should be preserved: expected %d, got %d", DangerThreshold, result.ContextDanger)
 	}
-	if result.SpeedFast != SpeedFast {
-		t.Errorf("SpeedFast should be preserved: expected %d, got %d", SpeedFast, result.SpeedFast)
-	}
 	if result.QuotaCritical != QuotaCritical {
 		t.Errorf("QuotaCritical should be preserved: expected %.1f, got %.1f", float64(QuotaCritical), result.QuotaCritical)
 	}
@@ -362,7 +353,6 @@ func TestMergeThresholds_PartialOverride(t *testing.T) {
 	base := DefaultThresholds()
 	override := Thresholds{
 		ContextDanger:      90,
-		SpeedFast:          100,
 		SessionCostHigh:    10.0,
 		CostVelocityMedium: 0.25,
 		QuotaCritical:      15.0,
@@ -373,9 +363,6 @@ func TestMergeThresholds_PartialOverride(t *testing.T) {
 	// Overridden int fields
 	if result.ContextDanger != 90 {
 		t.Errorf("ContextDanger should be overridden: expected 90, got %d", result.ContextDanger)
-	}
-	if result.SpeedFast != 100 {
-		t.Errorf("SpeedFast should be overridden: expected 100, got %d", result.SpeedFast)
 	}
 
 	// Overridden float64 fields
@@ -432,7 +419,7 @@ func TestLoadConfig_WithThresholds(t *testing.T) {
 	configPath := filepath.Join(configDir, "config.json")
 
 	// Write config with custom thresholds
-	content := `{"preset":"full","thresholds":{"context_danger":90,"speed_fast":100}}`
+	content := `{"preset":"full","thresholds":{"context_danger":90}}`
 	os.WriteFile(configPath, []byte(content), 0644)
 
 	cfg := LoadConfig()
@@ -440,9 +427,6 @@ func TestLoadConfig_WithThresholds(t *testing.T) {
 	// Verify overridden values
 	if cfg.Thresholds.ContextDanger != 90 {
 		t.Errorf("ContextDanger should be 90, got %d", cfg.Thresholds.ContextDanger)
-	}
-	if cfg.Thresholds.SpeedFast != 100 {
-		t.Errorf("SpeedFast should be 100, got %d", cfg.Thresholds.SpeedFast)
 	}
 
 	// Verify default values preserved
@@ -552,8 +536,6 @@ func TestValidateThresholds_CascadeToNegative(t *testing.T) {
 		CacheGood:          50,
 		WaitHigh:           60,
 		WaitMedium:         35,
-		SpeedFast:          60,
-		SpeedModerate:      30,
 		CostVelocityHigh:   0.50,
 		CostVelocityMedium: 0.10,
 		QuotaCritical:      10,
@@ -577,7 +559,7 @@ func TestValidateThresholds_CascadeToNegative(t *testing.T) {
 	}
 }
 
-func TestValidateThresholds_InvertedCacheWaitSpeed(t *testing.T) {
+func TestValidateThresholds_InvertedCacheWait(t *testing.T) {
 	th := Thresholds{
 		ContextDanger:      85,
 		ContextWarning:     70,
@@ -588,8 +570,6 @@ func TestValidateThresholds_InvertedCacheWaitSpeed(t *testing.T) {
 		CacheGood:          80, // inverted: good > excellent
 		WaitHigh:           30,
 		WaitMedium:         60, // inverted: medium > high
-		SpeedFast:          20,
-		SpeedModerate:      50, // inverted: moderate > fast
 		CostVelocityHigh:   0.50,
 		CostVelocityMedium: 0.10,
 		QuotaCritical:      10,
@@ -605,9 +585,6 @@ func TestValidateThresholds_InvertedCacheWaitSpeed(t *testing.T) {
 	if th.WaitMedium >= th.WaitHigh {
 		t.Errorf("WaitMedium (%d) should be < WaitHigh (%d)", th.WaitMedium, th.WaitHigh)
 	}
-	if th.SpeedModerate >= th.SpeedFast {
-		t.Errorf("SpeedModerate (%d) should be < SpeedFast (%d)", th.SpeedModerate, th.SpeedFast)
-	}
 }
 
 func TestValidateThresholds_UpperBoundClamping(t *testing.T) {
@@ -621,8 +598,6 @@ func TestValidateThresholds_UpperBoundClamping(t *testing.T) {
 		CacheGood:          150,
 		WaitHigh:           200,
 		WaitMedium:         150,
-		SpeedFast:          60,
-		SpeedModerate:      30,
 		CostVelocityHigh:   0.50,
 		CostVelocityMedium: 0.10,
 		QuotaCritical:      10,
@@ -670,8 +645,6 @@ func TestMergeThresholds_AllOverridden(t *testing.T) {
 		CacheGood:          60,
 		WaitHigh:           70,
 		WaitMedium:         40,
-		SpeedFast:          80,
-		SpeedModerate:      40,
 		CostVelocityHigh:   1.0,
 		CostVelocityMedium: 0.20,
 		QuotaCritical:      15,
@@ -708,12 +681,6 @@ func TestMergeThresholds_AllOverridden(t *testing.T) {
 	}
 	if result.WaitMedium != 40 {
 		t.Errorf("WaitMedium: expected 40, got %d", result.WaitMedium)
-	}
-	if result.SpeedFast != 80 {
-		t.Errorf("SpeedFast: expected 80, got %d", result.SpeedFast)
-	}
-	if result.SpeedModerate != 40 {
-		t.Errorf("SpeedModerate: expected 40, got %d", result.SpeedModerate)
 	}
 	if result.CostVelocityHigh != 1.0 {
 		t.Errorf("CostVelocityHigh: expected 1.0, got %.2f", result.CostVelocityHigh)
@@ -756,20 +723,5 @@ func TestValidateThresholds_QuotaCriticalHigh(t *testing.T) {
 	}
 	if th.QuotaHigh > 100 {
 		t.Errorf("QuotaHigh should not exceed 100, got %.1f", th.QuotaHigh)
-	}
-}
-
-func TestValidateThresholds_SpeedFastMinimum(t *testing.T) {
-	// SpeedFast=1 caused SpeedModerate equality (both=1).
-	// Now SpeedFast minimum is 2.
-	th := DefaultThresholds()
-	th.SpeedFast = 1
-	validateThresholds(&th)
-
-	if th.SpeedFast < 2 {
-		t.Errorf("SpeedFast should be clamped to minimum 2, got %d", th.SpeedFast)
-	}
-	if th.SpeedModerate >= th.SpeedFast {
-		t.Errorf("SpeedModerate (%d) should be < SpeedFast (%d)", th.SpeedModerate, th.SpeedFast)
 	}
 }

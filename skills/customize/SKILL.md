@@ -41,7 +41,7 @@ Advanced configuration for Howl statusline: choose a base preset, toggle individ
   - Label: **"minimal"**  
     Description: "Model + Context + Cost + Duration only (1 line)"
   - Label: **"developer"**  
-    Description: "Coding focus: Account, Git, Changes, Speed, Cache, Vim (2 lines)"
+    Description: "Coding focus: Account, Git, Changes, Cache, Vim (2 lines)"
   - Label: **"cost-focused"**  
     Description: "Budget tracking: Quota, API Wait, Cost Velocity (2 lines)"
 
@@ -53,25 +53,30 @@ Advanced configuration for Howl statusline: choose a base preset, toggle individ
 
 - **Question**: "Select which metrics to display (pre-checked = enabled in your preset)"
 - **Header**: "Customize Metrics"
-- **Options** (12 checkboxes):
+- **Options** (17 checkboxes):
   1. **account** - Account email
   2. **git** - Git branch + status
   3. **line_changes** - Code additions/deletions
-  4. **response_speed** - Tokens per second
-  5. **quota** - Usage quota visualization
-  6. **tools** - Tool call counts
-  7. **agents** - Active agent indicators
-  8. **cache_efficiency** - Cache hit percentage
-  9. **api_wait_ratio** - API wait time ratio
-  10. **cost_velocity** - Cost per minute
-  11. **vim_mode** - Vim mode indicator
-  12. **agent_name** - Current agent name
+  4. **quota** - Usage quota visualization
+  5. **tools** - Tool call counts
+  6. **agents** - Active agent indicators
+  7. **cache_efficiency** - Cache hit percentage
+  8. **api_wait_ratio** - API wait time ratio
+  9. **cost_velocity** - Cost per minute
+  10. **vim_mode** - Vim mode indicator
+  11. **agent_name** - Current agent name
+  12. **output_tokens** - Current-response output token count (`Out:1K`) _(default off)_
+  13. **effort** - Effort level indicator (`E:high`) _(default off)_
+  14. **thinking** - Extended thinking indicator (`Think`) _(default off)_
+  15. **session_name** - Truncated session name _(default off)_
+  16. **pull_request** - Linked PR status (`PR#1234 pending`) _(default off)_
+  17. **worktree** - Active git worktree (`wt:name`) _(default off)_
 
 **Pre-check based on `chosenPreset`:**
 
-- **full**: All 12 checked
+- **full**: All core metrics checked (new optional toggles effort/thinking/session_name/pull_request/worktree unchecked)
 - **minimal**: None checked
-- **developer**: account, git, line_changes, response_speed, cache_efficiency, vim_mode
+- **developer**: account, git, line_changes, cache_efficiency, vim_mode
 - **cost-focused**: quota, api_wait_ratio, cost_velocity
 
 **Important: Features are Additive-Only**
@@ -100,12 +105,11 @@ Advanced configuration for Howl statusline: choose a base preset, toggle individ
 - **Question**: "Choose which metrics should appear first on Line 2 (max 5, ordered by selection)"
 - **Header**: "Display Priority (Optional)"
 - **Subtitle**: "Only Line 2 metrics can be prioritized. Selected order = display order."
-- **Options** (5 checkboxes, only Line 2 metrics):
+- **Options** (4 checkboxes, only Line 2 metrics):
   1. **account** - Account email
   2. **git** - Git branch + status
   3. **line_changes** - Code additions/deletions
-  4. **response_speed** - Tokens per second
-  5. **quota** - Usage quota visualization
+  4. **quota** - Usage quota visualization
 
 **Constraints:**
 
@@ -154,7 +158,7 @@ Priority: quota → git
 
 Preview (example):
 [Sonnet 4.5] | ████░░░░░░░░░░░░░░░░ 21% (210K/1M) | $32.7 | 2h46m
-(2h)5h: 55%/42% :7d(3d6h) | user@example.com | main* | +2.7K/-120 | 50tok/s | Cache:96% | I
+(2h)5h: 55%/42% :7d(3d6h) | user@example.com | main* | +2.7K/-120 | Cache:96% | I
 
 Changes will apply on next refresh (~300ms).
 ```
@@ -252,9 +256,10 @@ This override cannot be disabled - it's a safety feature. The trigger point can 
 ### Line Placement Rules
 
 - **Line 1**: Model badge, context bar, cost, duration (always shown)
-- **Line 2**: account, git, line_changes, response_speed, quota (prioritizable)
+- **Line 2**: account, git, line_changes, quota (prioritizable)
 - **Line 3**: tools, agents (only in `full` preset or danger mode)
 - **Line 4**: cache_efficiency, api_wait_ratio, cost_velocity, vim_mode, agent_name (only in `full` or danger mode)
+- **Optional** (default off): effort, thinking, session_name, pull_request, worktree
 
 ### Refresh Rate
 
@@ -278,8 +283,8 @@ Agent: I can help customize that! Let's walk through it.
 > developer
 
 [Step 2] Customize metrics (pre-checked based on developer):
-☑ account, git, line_changes, response_speed, cache_efficiency, vim_mode
-☐ quota, tools, agents, api_wait_ratio, cost_velocity, agent_name
+☑ account, git, line_changes, cache_efficiency, vim_mode
+☐ quota, tools, agents, api_wait_ratio, cost_velocity, agent_name, effort, thinking, session_name, pull_request, worktree
 > User also checks: quota
 
 [Step 3] Priority for Line 2 (max 5):
